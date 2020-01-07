@@ -30,10 +30,10 @@
 #define MOTOR3_OFFLINE_EVENT EVENT_3BIT
 #define MOTOR4_OFFLINE_EVENT EVENT_4BIT
 #define YAW_OFFLINE_EVENT    EVENT_5BIT
-#define PITCH_OFFLINE_EVENT  EVENT_6BIT
-#define TURN_OFFLINE_EVENT   EVENT_7BIT
-#define TURN2_OFFLINE_EVENT  EVENT_8BIT
-#define PITCH2_OFFLINE_EVENT EVENT_9BIT
+#define PITCH_L_OFFLINE_EVENT  EVENT_6BIT
+#define SHOOT1_OFFLINE_EVENT   EVENT_7BIT
+#define SHOOT2_OFFLINE_EVENT  EVENT_8BIT
+#define PITCH_R_OFFLINE_EVENT  EVENT_6BIT
 
 void offline_init(void);
 struct detect_device *get_offline_dev(void);
@@ -42,6 +42,6 @@ int32_t get_offline_state(void);
 int32_t can1_detect_update(CAN_RxHeaderTypeDef *header, uint8_t *rx_data);
 int32_t can2_detect_update(CAN_RxHeaderTypeDef *header, uint8_t *rx_data);
 
-#define HERO_ROBOT
+
 
 #endif // __OFFLINE_CHECK_H__

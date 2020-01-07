@@ -71,12 +71,10 @@ void offline_init(void)
   else
   {
     detect_device_add_event(&offline_dev, YAW_OFFLINE_EVENT, 100, offline_beep_set_times, &offline_beep_times[5]);
-    detect_device_add_event(&offline_dev, PITCH_OFFLINE_EVENT, 100, offline_beep_set_times, &offline_beep_times[6]);
-    detect_device_add_event(&offline_dev, TURN_OFFLINE_EVENT, 100, offline_beep_set_times, &offline_beep_times[7]);
-  // #ifdef HERO_ROBOT
-  //   detect_device_add_event(&offline_dev, TURN2_OFFLINE_EVENT, 100, offline_beep_set_times, &offline_beep_times[8]);
-  //   detect_device_add_event(&offline_dev, PITCH2_OFFLINE_EVENT, 100, offline_beep_set_times, &offline_beep_times[9]);
-  // #endif //TODO: De-Comment it
+    detect_device_add_event(&offline_dev, PITCH_L_OFFLINE_EVENT, 100, offline_beep_set_times, &offline_beep_times[6]);
+    detect_device_add_event(&offline_dev, SHOOT1_OFFLINE_EVENT, 100, offline_beep_set_times, &offline_beep_times[7]);
+    detect_device_add_event(&offline_dev, SHOOT2_OFFLINE_EVENT, 100, offline_beep_set_times, &offline_beep_times[8]);
+    detect_device_add_event(&offline_dev, PITCH_R_OFFLINE_EVENT, 100, offline_beep_set_times, &offline_beep_times[9]);
   }
 
   soft_timer_register(offline_check, NULL, 20);
@@ -88,7 +86,7 @@ int32_t offline_check(void *argc)
 {
   detect_device_check(&offline_dev, 0xffffffff);
 
-  if(detect_device_get_event(&offline_dev) & TURN_OFFLINE_EVENT)
+  if(detect_device_get_event(&offline_dev) & SHOOT1_OFFLINE_EVENT)
     shoot_disable(pshoot);
 
   if(detect_device_get_event(&offline_dev) == 0)
@@ -138,16 +136,16 @@ int32_t can1_detect_update(CAN_RxHeaderTypeDef *header, uint8_t *rx_data)
     detect_device_update(&offline_dev, YAW_OFFLINE_EVENT);
     break;
   case 0x206:
-    detect_device_update(&offline_dev, PITCH_OFFLINE_EVENT);
+    detect_device_update(&offline_dev, PITCH_L_OFFLINE_EVENT);
     break;
   case 0x207:
-    detect_device_update(&offline_dev, TURN_OFFLINE_EVENT);
+    detect_device_update(&offline_dev, SHOOT1_OFFLINE_EVENT);
     break;
   case 0x208:
-    detect_device_update(&offline_dev, TURN2_OFFLINE_EVENT);
+    detect_device_update(&offline_dev, SHOOT2_OFFLINE_EVENT);
     break;
   case 0x209:
-    detect_device_update(&offline_dev, PITCH2_OFFLINE_EVENT);
+    detect_device_update(&offline_dev, PITCH_R_OFFLINE_EVENT);
     break;
   default:
     break;

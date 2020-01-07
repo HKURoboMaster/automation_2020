@@ -17,7 +17,7 @@
 
 #ifndef __GIMBAL_H__
 #define __GIMBAL_H__
-#define HERO_ROBOT
+// #define HERO_ROBOT
 
 #ifdef GIMBAL_H_GLOBAL
   #define GIMBAL_H_EXTERN
@@ -27,7 +27,7 @@
 
 /* gimbal relevant */
 #ifndef HERO_ROBOT
-#define PITCH_ANGLE_MAX      20.0f
+#define PITCH_ANGLE_MAX      32.0f
 #define PITCH_ANGLE_MIN      -15.0f
 #define YAW_ANGLE_MAX        180.0f
 #define YAW_ANGLE_MIN       -179.0f
@@ -52,17 +52,17 @@
 /* the deceleration ratio of yaw axis motor */
 #define YAW_DECELE_RATIO       1.0f
 /* the positive direction of pitch axis motor */
-#define PITCH_MOTOR_POSITIVE_DIR -1.0f
+#define PITCH_MOTOR_POSITIVE_DIR 1.0f
 /* the positive direction of yaw axis motor */
 #define YAW_MOTOR_POSITIVE_DIR  -1.0f
 
 #include "motor.h"
 #include "pid_controller.h"
-
+///
 #define YAW_MOTOR_INDEX 0
-#define PITCH_MOTOR_INDEX 1
-#define PIICH_ASSIT_INDEX 2
-
+#define PITCH_MOTOR_INDEX_L 1
+#define PITCH_MOTOR_INDEX_R 2
+///
 #define GIMBAL_SET_YAW (1<<0u)
 #define GIMBAL_SET_PITCH (1<<1u)
 #define GIMBAL_SET_ALL (GIMBAL_SET_YAW | GIMBAL_SET_PITCH)
@@ -77,15 +77,12 @@
 #define PITCH_DIRECTI -1
 #define YAW_DIRECT 0
 
-// #define PITCH_STEP 1 
-
 typedef struct gimbal *gimbal_t;
 
 struct gimbal_param
 {
   int16_t pitch_ecd_center;
   int16_t yaw_ecd_center;
-  int16_t pit2_ecd_center;
 };
 
 struct gimbal_p_y
@@ -93,7 +90,6 @@ struct gimbal_p_y
   /* unit: degree */
   float yaw;
   float pitch;
-  float pit2;
 };
 
 struct gimbal_rate
@@ -139,7 +135,7 @@ struct gimbal_info
 {
   uint8_t mode;
   float yaw_ecd_angle;
-  float pitch_ecd_angle[2];
+  float pitch_ecd_angle;
   float yaw_gyro_angle;
   float pitch_gyro_angle;
   float yaw_rate;
@@ -164,7 +160,7 @@ int32_t gimbal_set_yaw_speed(struct gimbal *gimbal, float yaw);
 int32_t gimbal_set_pitch_angle(struct gimbal *gimbal, float pitch);
 int32_t gimbal_set_yaw_angle(struct gimbal *gimbal, float yaw, uint8_t mode);
 
-int32_t gimbal_set_offset(struct gimbal *gimbal, uint16_t yaw_ecd, uint16_t pitch_ecd, uint16_t pit2_ecd);
+int32_t gimbal_set_offset(struct gimbal *gimbal, uint16_t yaw_ecd, uint16_t pitch_ecd);
 
 int32_t gimbal_pitch_enable(struct gimbal *gimbal);
 int32_t gimbal_pitch_disable(struct gimbal *gimbal);

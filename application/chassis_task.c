@@ -26,7 +26,7 @@
 #include "drv_io.h"
 #define RAD_TO_DEG 57.296f // 180/PI
 #define MAPPING_INDEX_CRT 1.0f
-#define MAPPING_INDEX_VTG 0.005f
+#define MAPPING_INDEX_VTG 1.0f
 
 float follow_relative_angle;
 struct pid pid_follow = {0}; //angle control
@@ -63,7 +63,7 @@ uint8_t sensor_offline = 0;
   static uint8_t superCapacitor_Ctrl(chassis_t pchassis, uint8_t low_cap_flag, uint8_t extra_current, uint8_t last_sw);
 #endif
 
-#define km_dodge          prc_info->kb.bit.V == 1
+#define km_dodge          prc_info->kb.bit.SHIFT == 1
 
 static uint8_t dodging = 0;
 void chassis_task(void const *argument)
@@ -90,10 +90,10 @@ void chassis_task(void const *argument)
   chassis_disable(pchassis);
 
   chassis_set_offset(pchassis, ROTATE_X_OFFSET, ROTATE_Y_OFFSET);
-  #ifdef HERO_ROBOT
+ 
   static int8_t   twist_cnt = 1;
   static float    last_relative_angle;
-  #endif
+
   while (1)
   {
     static uint8_t sw, extra_current;
@@ -103,7 +103,7 @@ void chassis_task(void const *argument)
       chassis_enable(pchassis);
       int32_t key_x_speed = MAX_CHASSIS_VX_SPEED/2;
       int32_t key_y_speed = MAX_CHASSIS_VY_SPEED/2;
-      if(prc_info->kb.bit.SHIFT)
+      if(prc_info->kb.bit.V)
       {
         key_x_speed = MAX_CHASSIS_VX_SPEED;
         key_y_speed = MAX_CHASSIS_VY_SPEED;
@@ -125,32 +125,15 @@ void chassis_task(void const *argument)
 
       if(km_dodge)
       {
-        #ifndef HERO_ROBOT
         wz = MAX_CHASSIS_VW_SPEED;
-        #else
-        if(!dodging)
-        {
-          twist_cnt = 1;
-        }
-        else if(last_relative_angle * follow_relative_angle <= 0 || 
-                (follow_relative_angle>=DODGING_TH-2.5f && last_relative_angle<=DODGING_TH-2.5f)|| 
-                (follow_relative_angle<=-DODGING_TH+2.5f && last_relative_angle>=-DODGING_TH+2.5f))
-        {
-          twist_cnt += 1;
-        }
-        last_relative_angle = follow_relative_angle;
-        int8_t delta_wz = (twist_cnt/2)%2 ? DODGING_TH : -DODGING_TH;
-        wz  = pid_calculate(&pid_follow, follow_relative_angle, delta_wz);
-        #endif
         dodging |= 1;
       }
       else
       {
         wz  = pid_calculate(&pid_follow, follow_relative_angle, 0);
-        wz = -(float)prc_info->ch1/RC_CH_SCALE*MAX_CHASSIS_VW_SPEED*0.51f; //TODO: Change back to PID
         dodging &= 0;
       }
-      if(abs(vx)>2*MAX_CHASSIS_VX_SPEED/3 || abs(vy)>=2*MAX_CHASSIS_VY_SPEED/3 || abs(wz)>=2*MAX_CHASSIS_VW_SPEED/3)
+      if(abs((int)vx)>2*MAX_CHASSIS_VX_SPEED/3 || abs((int)vy)>=2*MAX_CHASSIS_VY_SPEED/3 || abs((int)wz)>=2*MAX_CHASSIS_VW_SPEED/3)
         extra_current = 1;
       else
         extra_current = 0;
@@ -184,7 +167,7 @@ void chassis_task(void const *argument)
                                   abs(pchassis->motor[1].data.given_current)+
                                   abs(pchassis->motor[2].data.given_current)+
                                   abs(pchassis->motor[3].data.given_current))/1000*MOTOR_TORQUE_CURRENT_CO;
-          if(sensor_offline & VOLTAGE_OFFLINE || chassis_power.voltage<LOW_VOLTAGE)
+          if(sensor_offline & VOLTAGE_OFFLINE || chassis_power.voltage < LOW_VOLTAGE)
             chassis_power.current *= 2;
         }
         osDelayUntil(&period, 2);
@@ -325,10 +308,10 @@ int get_chassis_power(struct chassis_power *chassis_power)
 	{
 		chassis_power->voltage_debug = HAL_ADC_GetValue(&hadc2);
 	}
-  // Check the offline
+  // Check the offline # TODO: determine whether this is corrent
   if(chassis_power->current_debug < 1300)
     sensor_offline |= CURRENT_OFFLINE;
-  if(chassis_power->voltage_debug <1300)
+  if(chassis_power->voltage_debug < 1300)
     sensor_offline |= VOLTAGE_OFFLINE;
   // Smoothed raw data
 	float current_smoothed = smooth_filter(10,((float)chassis_power->current_debug) * MAPPING_INDEX_CRT,weight)/2;
@@ -336,10 +319,10 @@ int get_chassis_power(struct chassis_power *chassis_power)
   // Store the real data
   chassis_power->current = fabs((((chassis_power->current_debug-2048.0f)*25.0f/1024.0f)/10.0f-2.45f)*2.1); // Assume the sensor is 20 A
   chassis_power->voltage = fabs(((5.0f * 5.0f) / 4096.0f)*chassis_power->voltage_debug); // TODO: change the scaling
-	chassis_power->power = chassis_power->current * chassis_power->voltage;
+	//chassis_power->power = chassis_power->current * chassis_power->voltage;
 	// Refresh the js variables
   current_js = (int) (chassis_power->current_debug*1000);
 	current_js_smooth = (int) (chassis_power->current*1000);
-	power_js = (int)(chassis_power->power*1000);
+	//power_js = (int)(chassis_power->power*1000);
 	return chassis_power->power;
 }

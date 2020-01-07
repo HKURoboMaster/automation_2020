@@ -25,6 +25,7 @@
 #include "offline_check.h"
 #include "param.h"
 #include "ramp.h"
+#include "angle_queue.h"
 
 #define DEFAULT_IMU_TEMP 50
 
@@ -47,7 +48,7 @@ kalman_filter_init_t yaw_kalman_filter_para = {
   .A_data = {1, 0.0028, 0, 1},			// Predict function Transfer parameter 1000Hz?
   .H_data = {1, 0, 0, 1},					// Measurement transfer parameter
   .Q_data = {1, 0, 0, 1},					// Co-variance of progress matrix
-  .R_data = {500, 0, 0, 1000}		// Co-Variance of Measurement Observe matrix.
+  .R_data = {200, 0, 0, 400}		// Co-Variance of Measurement Observe matrix.
 };
 
 kalman_filter_init_t pit_kalman_filter_para = 
@@ -56,7 +57,7 @@ kalman_filter_init_t pit_kalman_filter_para =
   .A_data = {1, 0.0028, 0, 1},
   .H_data = {1, 0, 0, 1},
   .Q_data = {1, 0, 0, 1},
-  .R_data = {800, 0, 0, 1600}		// Basic Idea is kalman filter uses co-variance data.
+  .R_data = {400, 0, 0, 800}		// Basic Idea is kalman filter uses co-variance data.
 };	// Only consider the variance instead of co-variance.
 // Kalman Filter
 #else
@@ -198,10 +199,8 @@ int32_t mpu_wx, mpu_wy, mpu_wz;
 // PID debugging
 int32_t yaw_angle_fdb_js, yaw_angle_ref_js;
 int32_t pit_angle_fdb_js, pit_angle_ref_js;
-int32_t pit2_angle_fdb_js, pit2_angle_ref_js;
 int32_t yaw_spd_fdb_js, yaw_spd_ref_js;
 int32_t pit_spd_fdb_js, pit_spd_ref_js;
-int32_t pit2_spd_fdb_js, pit2_spd_ref_js;
 int32_t yaw_ecd_angle_js, pit_ecd_angle_js;
 /** Edited by Y.H. Liu
  * @Jun 12, 2019: modified the mode switch
@@ -234,16 +233,22 @@ void gimbal_task(void const *argument)
   float pitch_autoaim_offset = 0.0f;
   float pit_delta, yaw_delta;
   // Added By Eric Chen : Init Kalman filter params
+  //#ifdef KALMAN
 	yaw_kalman_filter_para.xhat_data[0] = 0;
 	yaw_kalman_filter_para.xhat_data[1] = 0;
 	pit_kalman_filter_para.xhat_data[0] = 0;
 	pit_kalman_filter_para.xhat_data[1] = 0;
   kalman_filter_init(&yaw_kalman_filter,&yaw_kalman_filter_para);
   kalman_filter_init(&pit_kalman_filter,&pit_kalman_filter_para);
-
+  //#else
+  struct angle_queue yawQ;
+  struct angle_queue pitQ; 
+  queue_init(&yawQ);
+  queue_init(&pitQ);
+	//#endif
   if (pparam->gim_cali_data.calied_done == CALIED_FLAG)
   {
-    gimbal_set_offset(pgimbal, pparam->gim_cali_data.yaw_offset, pparam->gim_cali_data.pitch_offset, pparam->gim_cali_data.pit2_offset); 
+    gimbal_set_offset(pgimbal, pparam->gim_cali_data.yaw_offset, pparam->gim_cali_data.pitch_offset);
   }
   else
   {
@@ -282,7 +287,25 @@ void gimbal_task(void const *argument)
 		#endif
 		//Each time update
     #endif
-
+		// The reason using a queue is : Make a 10 ms delay when receive the data;
+		// Since each 10 ms the data will be updated from PC
+		// Encoder angle will be enqueue.each time and the encoder
+		//#ifndef KALMAN
+    if(yawQ.len>=DELAY)
+    {
+      do
+      {
+        yaw_autoaim_offset = pgimbal->ecd_angle.yaw - deQueue(&yawQ);
+      }while(yawQ.len>=DELAY);
+    }
+    if(pitQ.len>=DELAY)
+    {
+      do
+      {
+        pitch_autoaim_offset = pgimbal->ecd_angle.pitch - deQueue(&pitQ);
+      }while(pitQ.len>=DELAY);
+    }
+		//#endif
     if(rc_device_get_state(prc_dev, RC_S2_DOWN2MID) == RM_OK)
     {
       //switched out disabled mode
@@ -359,7 +382,7 @@ void gimbal_task(void const *argument)
         //pit_angle_raw += pit_speed*gim_tim_ms/1000;
 				yaw_kf_data = kalman_filter_calc(&yaw_kalman_filter,yaw_angle_raw,yaw_speed);
 				pit_kf_data = kalman_filter_calc(&pit_kalman_filter,pit_angle_raw,pit_speed);
-				kalman_yaw_js[0] = (int)((yaw_kf_data[0] + yaw_kf_data[1]*0.1f)*1000);
+				kalman_yaw_js[0] = (int)((yaw_kf_data[0] + yaw_kf_data[1]*0.123f)*1000);
 				kalman_yaw_js[1] = (int)(yaw_kf_data[1]*1000);
 				kalman_pit_js[0] = (int)((pit_kf_data[0]+pit_kf_data[1]*0.1f)*1000);
 				kalman_pit_js[1] = (int)(pit_kf_data[1]*1000);
@@ -375,9 +398,15 @@ void gimbal_task(void const *argument)
 					
 					// Equavalent to P only control. Need a I term.
 					// Set angle speed is no matter what set the difference of angle
-					gimbal_set_yaw_speed(pgimbal,0.12f*(yaw_kf_data[0] + yaw_kf_data[1]*0.15f));
+					if((yaw_kf_data[0] - yaw_autoaim_offset + yaw_kf_data[1]*0.273f)>3.0f)
+						gimbal_set_yaw_speed(pgimbal,0.12f*(yaw_kf_data[0] + yaw_kf_data[1]*0.123f));
+					else
+						gimbal_set_yaw_speed(pgimbal,0.07f*(yaw_kf_data[0] + yaw_kf_data[1]*0.273f));
 				  //gimbal_set_yaw_speed(pgimbal,0.1*yaw_kf_data[0]);
-					gimbal_set_pitch_speed(pgimbal,0.12f*(pit_kf_data[0] + pit_kf_data[1]*0.15f));
+					if((pit_kf_data[0] - pitch_autoaim_offset + pit_kf_data[1]*0.273f)>3.0f)
+						gimbal_set_pitch_speed(pgimbal,0.12f*(pit_kf_data[0] + pit_kf_data[1]*0.15f));
+					else
+						gimbal_set_pitch_speed(pgimbal,0.07f*(pit_kf_data[0] + pit_kf_data[1]*0.273f));
 					}
 					else
 						pc_counter++;
@@ -411,7 +440,7 @@ void gimbal_task(void const *argument)
         
 
         gimbal_set_yaw_mode(pgimbal, GYRO_MODE);
-        pit_delta = (float)prc_info->ch2 * GIMBAL_RC_PITCH + -1 *  (float)pit_mouse * GIMBAL_MOUSE_PITCH;
+        pit_delta = (float)prc_info->ch2 * GIMBAL_RC_PITCH + 1 *  (float)pit_mouse * GIMBAL_MOUSE_PITCH;
         yaw_delta =     square_ch1       * GIMBAL_RC_YAW   +       (float)yaw_mouse * GIMBAL_MOUSE_YAW;
         yaw_delta += prc_info->kb.bit.E ? YAW_KB_SPEED : 0;
         yaw_delta -= prc_info->kb.bit.Q ? YAW_KB_SPEED : 0;
@@ -429,8 +458,7 @@ void gimbal_task(void const *argument)
           if(!prc_info->kb.bit.CTRL)
           {
             pgimbal->param.yaw_ecd_center += ((float)prc_info->wheel/RC_CH_SCALE);
-            pgimbal->param.pit2_ecd_center += ((float)prc_info->wheel/RC_CH_SCALE);
-            gimbal_set_offset(pgimbal, pgimbal->param.yaw_ecd_center, pgimbal->param.pitch_ecd_center, pgimbal->param.pit2_ecd_center);
+            gimbal_set_offset(pgimbal, pgimbal->param.yaw_ecd_center, pgimbal->param.pitch_ecd_center);
           }
           else
           {
@@ -457,21 +485,20 @@ void gimbal_task(void const *argument)
     yaw_angle_ref_js = pgimbal->cascade[0].outer.set * 1000;
     pit_angle_fdb_js = pgimbal->cascade[1].outer.get * 1000;
     pit_angle_ref_js = pgimbal->cascade[1].outer.set * 1000;
-    pit2_angle_fdb_js = pgimbal->cascade[2].outer.get * 1000;
-    pit2_angle_ref_js = pgimbal->cascade[2].outer.set * 1000;
 
     yaw_spd_fdb_js = pgimbal->cascade[0].inter.get * 1000;
     yaw_spd_ref_js = pgimbal->cascade[0].inter.set * 1000;
     pit_spd_fdb_js = pgimbal->cascade[1].inter.get * 1000;
     pit_spd_ref_js = pgimbal->cascade[1].inter.set * 1000;
-    pit2_spd_fdb_js = pgimbal->cascade[2].inter.get * 1000;
-    pit2_spd_ref_js = pgimbal->cascade[2].inter.set * 1000;
 		
 		//Eric Edited Debug the ecd of pitch and yaw
 		yaw_ecd_angle_js = pgimbal->ecd_angle.yaw;
 		pit_ecd_angle_js = pgimbal->ecd_angle.pitch;
 		
-
+		
+		
+    enQueue(&yawQ, pgimbal->ecd_angle.yaw);
+    enQueue(&pitQ, pgimbal->ecd_angle.pitch);
     gimbal_imu_update(pgimbal);
     gimbal_execute(pgimbal);
     // The period is calculated from very beginning.
@@ -488,9 +515,9 @@ static int32_t gimbal_imu_update(void *argc)
   mpu_get_data(&mpu_sensor);
   mahony_ahrs_updateIMU(&mpu_sensor, &mahony_atti);
 
-  gimbal_pitch_gyro_update(pgimbal, mahony_atti.pitch);
+  gimbal_pitch_gyro_update(pgimbal, -mahony_atti.roll);
   gimbal_yaw_gyro_update(pgimbal, -mahony_atti.yaw);
-  gimbal_rate_update(pgimbal, -mpu_sensor.wz * RAD_TO_DEG, mpu_sensor.wy * RAD_TO_DEG);
+  gimbal_rate_update(pgimbal, mpu_sensor.wy * RAD_TO_DEG, -mpu_sensor.wx * RAD_TO_DEG);
   
   mpu_pit = mahony_atti.pitch * 1000;
   mpu_yaw = mahony_atti.yaw   * 1000;
@@ -519,14 +546,33 @@ static int32_t imu_temp_keep(void *argc)
 }
 
 uint8_t auto_adjust_f;
-volatile uint16_t pit_ecd_c, yaw_ecd_c, pit2_ecd_c;
+volatile uint32_t pit_time, yaw_time;
+uint32_t pit_cnt;
+uint32_t pit_timeout_cnt=0;
+volatile uint16_t yaw_ecd_r, yaw_ecd_l;
+volatile uint16_t pit_ecd_c, yaw_ecd_c;
 
+void send_gimbal_current(int16_t iq1, int16_t iq2, int16_t iq3)
+{
+  static uint8_t tx_data[8];
 
-/**Modified by Y.H. Liu & Eric Chen
+  tx_data[0] = iq1 >> 8;
+  tx_data[1] = iq1;
+  tx_data[2] = iq2 >> 8;
+  tx_data[3] = iq2;
+  tx_data[4] = iq3 >> 8;
+  tx_data[5] = iq3;
+
+  can_msg_bytes_send(&hcan1, tx_data, 6, 0x1FF);
+}
+
+struct pid pid_pit = {0};
+struct pid pid_pit_spd = {0};
+
+/**Modified by Y.H. Liu
  * @Jun 20, 2019: adaption for hero
  * @Jul 8, 2019: use the original methods to calculate the pitch centre
  * @Jul 17, 2019: use a queue for auto-aiming adaption
- * @Jul 31, 2019: delete the queue, instead, a Kalman filter is used
  * 
  * Automatically adjust the netural position for gimbal
  */
@@ -534,12 +580,38 @@ static void auto_gimbal_adjust(gimbal_t pgimbal)
 {
   if (auto_adjust_f)
   {
-    pit_ecd_c = pgimbal->motor[PITCH_MOTOR_INDEX].data.ecd;
-    pit2_ecd_c = -1*pgimbal->motor[PIICH_ASSIT_INDEX].data.ecd;
+    pid_struct_init(&pid_pit, 2000, 0, 30, 0.001, 0);
+    pid_struct_init(&pid_pit_spd, 30000, 8000, 200, 0, 0);
+    while (1)
+    {
+      gimbal_imu_update(pgimbal);
+      pid_calculate(&pid_pit, -pgimbal->sensor.gyro_angle.pitch, -90);
+      pid_calculate(&pid_pit_spd, -pgimbal->sensor.rate.pitch_rate, pid_pit.out);
+
+      send_gimbal_current(0, pid_pit_spd.out, 0);
+
+      HAL_Delay(2);
+
+      if ((fabs(pgimbal->sensor.gyro_angle.pitch-85) < 0.1))
+      {
+        pit_cnt++;
+        pit_timeout_cnt = 0;
+      }
+      else
+      {
+        pit_cnt = 0;
+        pit_timeout_cnt++;
+      }
+      if (pit_cnt > 1000 || pit_timeout_cnt>2000)
+      {
+        pit_ecd_c = pgimbal->motor[PITCH_MOTOR_INDEX_L].data.ecd;
+        break;
+      }
+    }
     yaw_ecd_c = pgimbal->motor[YAW_MOTOR_INDEX].data.ecd;
 
-    gimbal_save_data(yaw_ecd_c, pit_ecd_c, pit2_ecd_c);
-    gimbal_set_offset(pgimbal, yaw_ecd_c, pit_ecd_c, pit2_ecd_c);
+    gimbal_save_data(yaw_ecd_c, pit_ecd_c);
+    gimbal_set_offset(pgimbal, yaw_ecd_c, pit_ecd_c);
     auto_adjust_f = 0;
     __disable_irq();
     NVIC_SystemReset();
@@ -572,15 +644,19 @@ static void gimbal_state_init(gimbal_t pgimbal)
     gimbal_set_pitch_mode(pgimbal, ENCODER_MODE);
     gimbal_set_yaw_mode(pgimbal, ENCODER_MODE);
     gimbal_yaw_disable(pgimbal);
-    gimbal_set_pitch_angle(pgimbal, 0);
+    gimbal_set_pitch_angle(pgimbal, pgimbal->ecd_angle.pitch * (1 - ramp_calculate(&pitch_ramp)));
+
     if ((pgimbal->ecd_angle.pitch != 0) && (pgimbal->ecd_angle.yaw != 0))
     {
-      gimbal_yaw_enable(pgimbal);
-			// Rotate from current angle to 0 read from ecd
-      gimbal_set_yaw_angle(pgimbal, pgimbal->ecd_angle.yaw * (1 - ramp_calculate(&yaw_ramp)), 0);
-      if (fabs(pgimbal->ecd_angle.yaw) < 1.5f)
+      if (fabs(pgimbal->ecd_angle.pitch) < 1.5f)
       {
-        auto_init_f = 1;
+        gimbal_yaw_enable(pgimbal);
+				// Rotate from current angle to 0 read from ecd
+        gimbal_set_yaw_angle(pgimbal, pgimbal->ecd_angle.yaw * (1 - ramp_calculate(&yaw_ramp)), 0);
+        if (fabs(pgimbal->ecd_angle.yaw) < 1.5f)
+        {
+          auto_init_f = 1;
+        }
       }
     }
   }
@@ -613,7 +689,12 @@ float target_speed_calc(speed_calc_data_t *S, uint32_t time, float position)
   S->last_position = position;
   S->last_speed = S->speed;
   S->delay_cnt = 0;
-
+	// Since we have implemented lost connection checking, delay mechinism is improper.
+	
+  //if(S->delay_cnt > 200) // delay 200ms speed = 0
+  //{
+  //  S->processed_speed = 0;
+  //}
   return S->processed_speed;
 }
 

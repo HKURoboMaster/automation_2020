@@ -37,9 +37,10 @@ int32_t motor_device_register(motor_device_t motor_dev,
   if (motor_device_find_by_canid(motor_dev->can_periph, motor_dev->can_id) != NULL)
     return -RM_EXISTED;
 
-  if ((motor_dev->can_id < 0x201) && (motor_dev->can_id > 0x208))
+///////////////////////////////
+  if ((motor_dev->can_id < 0x201) && (motor_dev->can_id > 0x20C))
     return -RM_ERROR;
-
+////////////////////////////////
   motor_dev->parent.type = Device_Class_Motor;
   motor_dev->get_data = get_encoder_data;
 
@@ -137,10 +138,10 @@ motor_device_t motor_device_find_by_canid(enum device_can can, uint16_t can_id)
   /* not found */
   return NULL;
 }
-
-static uint8_t motor_send_flag[DEVICE_CAN_NUM][2];
-static struct can_msg motor_msg[DEVICE_CAN_NUM][2];
-
+///
+static uint8_t motor_send_flag[DEVICE_CAN_NUM][3];
+static struct can_msg motor_msg[DEVICE_CAN_NUM][3];
+///
 int32_t motor_device_can_output(enum device_can m_can)
 {
   struct object *object;
@@ -173,20 +174,30 @@ int32_t motor_device_can_output(enum device_can m_can)
         motor_msg[motor_dev->can_periph][0].data[(motor_dev->can_id - 0x201) * 2 + 1] = motor_dev->current;
         motor_send_flag[motor_dev->can_periph][0] = 1;
       }
-      else
+      else if (((motor_device_t)object)->can_id < 0x209)
       {
         motor_msg[motor_dev->can_periph][1].id = 0x1FF;
         motor_msg[motor_dev->can_periph][1].data[(motor_dev->can_id - 0x205) * 2] = motor_dev->current >> 8;
         motor_msg[motor_dev->can_periph][1].data[(motor_dev->can_id - 0x205) * 2 + 1] = motor_dev->current;
         motor_send_flag[motor_dev->can_periph][1] = 1;
       }
+      //////////////////
+      else
+      {
+        motor_msg[motor_dev->can_periph][2].id = 0x2FF;
+        motor_msg[motor_dev->can_periph][2].data[(motor_dev->can_id - 0x209) * 2] = motor_dev->current >> 8;
+        motor_msg[motor_dev->can_periph][2].data[(motor_dev->can_id - 0x209) * 2 + 1] = motor_dev->current;
+        motor_send_flag[motor_dev->can_periph][2] = 1;
+      }
+      /////////////////////
+      
     }
   }
 
   /* leave critical */
   exit_critical();
-  
-  for (int j = 0; j < 2; j++)
+  ///
+  for (int j = 0; j < 3; j++)
   {
     if (motor_send_flag[m_can][j] == 1)
     {
@@ -195,6 +206,7 @@ int32_t motor_device_can_output(enum device_can m_can)
       motor_send_flag[m_can][j] = 0;
     }
   }
+  ///
 
   /* not found */
   return RM_OK;

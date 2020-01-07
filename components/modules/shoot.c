@@ -24,69 +24,10 @@ static int32_t shoot_fric_ctrl(struct shoot *shoot);
 static int32_t shoot_cmd_ctrl(struct shoot *shoot);
 static int32_t shoot_block_check(struct shoot *shoot);
 
-//Leo starts
-int32_t shoot_pid_register2(struct shoot *shoot, const char *name, enum device_can can)
-{
-  char motor_name[OBJECT_NAME_MAX_LEN] = {0};
-  uint8_t name_len;
-
-  int32_t err;
-
-  if (shoot == NULL)
-    return -RM_INVAL;
-  if (shoot_find(name) != NULL)
-    return -RM_EXISTED;
-
-  object_init(&(shoot->parent), Object_Class_Shoot, name);
-
-  name_len = strlen(name);
-
-  if (name_len > OBJECT_NAME_MAX_LEN / 2)
-  {
-    name_len = OBJECT_NAME_MAX_LEN / 2;
-  }
-
-  memcpy(&motor_name, name, name_len);
-  shoot->motor.can_periph = can;
-  shoot->motor.can_id = 0x208; 
-  shoot->motor.init_offset_f = 1; 
-
-  shoot->ctrl.convert_feedback = shoot_pid_input_convert;
-
-  pid_struct_init(&(shoot->motor_pid), 15000, 7500, 10, 0.3, 0); 
-
-  shoot->param.block_current = BLOCK_CURRENT_DEFAULT;
-  shoot->param.block_speed = BLOCK_SPEED_DEFAULT;
-  shoot->param.block_timeout = BLOCK_TIMEOUT_DEFAULT;
-  shoot->param.turn_speed = TURN_SPEED_DEFAULT;
-  shoot->param.check_timeout = BLOCK_CHECK_TIMEOUT_DEFAULT;
-	shoot->fric_spd[0] = FRIC_MIN_SPEED;
-  shoot->fric_spd[1] = FRIC_MIN_SPEED;
-
-  memcpy(&motor_name[name_len], "_TURN\0", 6);
-
-  err = motor_device_register(&(shoot->motor), motor_name, 0);
-  if (err != RM_OK)
-    goto end;
-
-  memcpy(&motor_name[name_len], "_CTL\0", 7);
-
-  err = pid_controller_register(&(shoot->ctrl), motor_name, &(shoot->motor_pid), &(shoot->motor_feedback), 1);
-  if (err != RM_OK)
-    goto end;
-
-  shoot_state_update(shoot);
-
-  return RM_OK;
-end:
-  object_detach(&(shoot->parent));
-
-  return err;
-}
-//Leo ends
+///////////Start by Yemi: add another shoot motor
 int32_t shoot_pid_register(struct shoot *shoot, const char *name, enum device_can can)
 {
-  char motor_name[OBJECT_NAME_MAX_LEN] = {0};
+  char motor_name[2][OBJECT_NAME_MAX_LEN] = {0};
   uint8_t name_len;
 
   int32_t err;
@@ -105,14 +46,16 @@ int32_t shoot_pid_register(struct shoot *shoot, const char *name, enum device_ca
     name_len = OBJECT_NAME_MAX_LEN / 2;
   }
 
-  memcpy(&motor_name, name, name_len);
-  shoot->motor.can_periph = can;
-  shoot->motor.can_id = 0x207;
-  shoot->motor.init_offset_f = 1;
+  for (int i = 0; i < 2; i++)
+  {
+    memcpy(&motor_name[i], name, name_len);
+    shoot->motor[i].can_periph = can;
+    shoot->motor[i].can_id = 0x207 + i;
+    shoot->motor[i].init_offset_f = 1;
 
-  shoot->ctrl.convert_feedback = shoot_pid_input_convert;
-
-  pid_struct_init(&(shoot->motor_pid), 15000, 7500, 10, 0.3, 0);
+    shoot->ctrl[i].convert_feedback = shoot_pid_input_convert;
+    pid_struct_init(&(shoot->motor_pid[i]), 15000, 7500, 10, 0.3, 0);
+  }
 
   shoot->param.block_current = BLOCK_CURRENT_DEFAULT;
   shoot->param.block_speed = BLOCK_SPEED_DEFAULT;
@@ -123,20 +66,28 @@ int32_t shoot_pid_register(struct shoot *shoot, const char *name, enum device_ca
   shoot->fric_spd[0] = FRIC_MIN_SPEED;
   shoot->fric_spd[1] = FRIC_MIN_SPEED;
 
-  memcpy(&motor_name[name_len], "_TURN\0", 6);
+  memcpy(&motor_name[SHOOT_MOTOR_INDEX_1][name_len], "_SHT1\0", 6);
+  memcpy(&motor_name[SHOOT_MOTOR_INDEX_2][name_len], "_SHT2\0", 6);
+  
+  for (int i = 0; i < 2; i++)
+  {
+    err = motor_device_register(&(shoot->motor[i]), motor_name[i], 0);
+    if (err != RM_OK)
+      goto end;
+  }
 
-  err = motor_device_register(&(shoot->motor), motor_name, 0);
-  if (err != RM_OK)
-    goto end;
-
-  memcpy(&motor_name[name_len], "_CTL\0", 7);
-
-  err = pid_controller_register(&(shoot->ctrl), motor_name, &(shoot->motor_pid), &(shoot->motor_feedback), 1);
-  if (err != RM_OK)
-    goto end;
-
+  memcpy(&motor_name[SHOOT_MOTOR_INDEX_1][name_len], "_CTLS1\0", 7);
+  memcpy(&motor_name[SHOOT_MOTOR_INDEX_2][name_len], "_CTLS2\0", 7);
+  
+  for (int i = 0; i < 2; i++)
+  {
+    err = pid_controller_register(&(shoot->ctrl[i]), motor_name[i], &(shoot->motor_pid[i]), &(shoot->motor_feedback[i]), 1);
+    if (err != RM_OK)
+      goto end;
+  }
   shoot_state_update(shoot);
-  controller_disable(&(shoot->ctrl));
+  controller_disable(&(shoot->ctrl[SHOOT_MOTOR_INDEX_1]));
+  controller_disable(&(shoot->ctrl[SHOOT_MOTOR_INDEX_2]));
 
   return RM_OK;
 end:
@@ -144,6 +95,7 @@ end:
 
   return err;
 }
+//////////////////////////End by Yemi
 /**Edited by Y.H. Liu
  * @Jul 8, 2019: Change the slope to the function: shoot_fric_ctrl
  * 
@@ -205,14 +157,19 @@ int32_t shoot_execute(struct shoot *shoot)
   // shoot_block_check(shoot); Inside the shoot_cmd_ctrl and inside state_update
   shoot_cmd_ctrl(shoot);
 
-  pdata = motor_device_get_data(&(shoot->motor));
+  pdata = motor_device_get_data(&(shoot->motor[SHOOT_MOTOR_INDEX_1]));
 	
-  controller_set_input(&(shoot->ctrl), shoot->target.motor_speed);
-  controller_execute(&(shoot->ctrl), (void *)pdata);
-  controller_get_output(&(shoot->ctrl), &motor_out);
+  controller_set_input(&(shoot->ctrl[SHOOT_MOTOR_INDEX_1]), shoot->target.motor_speed);
+  controller_execute(&(shoot->ctrl[SHOOT_MOTOR_INDEX_1]), (void *)pdata);
+  controller_get_output(&(shoot->ctrl[SHOOT_MOTOR_INDEX_1]), &motor_out);
 
-  motor_device_set_current(&shoot->motor, (int16_t)motor_out);
+  controller_set_input(&(shoot->ctrl[SHOOT_MOTOR_INDEX_2]), shoot->target.motor_speed);//////start by Yemi:add another shoot motor
+  controller_execute(&(shoot->ctrl[SHOOT_MOTOR_INDEX_2]), (void *)pdata);//////
+  controller_get_output(&(shoot->ctrl[SHOOT_MOTOR_INDEX_2]), &motor_out);/////
 
+  motor_device_set_current(&shoot->motor[SHOOT_MOTOR_INDEX_1], (int16_t)motor_out);
+  motor_device_set_current(&shoot->motor[SHOOT_MOTOR_INDEX_2], (int16_t)motor_out);/////end by Yemi
+  
   return RM_OK;
 }
 
@@ -283,7 +240,8 @@ int32_t shoot_enable(struct shoot *shoot)
   if (shoot == NULL)
     return -RM_INVAL;
 
-  controller_enable(&(shoot->ctrl));
+  controller_enable(&(shoot->ctrl[SHOOT_MOTOR_INDEX_1]));
+  controller_enable(&(shoot->ctrl[SHOOT_MOTOR_INDEX_2]));
 
   return RM_OK;
 }
@@ -293,8 +251,9 @@ int32_t shoot_disable(struct shoot *shoot)
   if (shoot == NULL)
     return -RM_INVAL;
   shoot_set_fric_speed(shoot, 0, 0);
-  controller_disable(&(shoot->ctrl));
 
+  controller_disable(&(shoot->ctrl[SHOOT_MOTOR_INDEX_1]));
+  controller_disable(&(shoot->ctrl[SHOOT_MOTOR_INDEX_2]));
   return RM_OK;
 }
 
@@ -306,7 +265,7 @@ static int32_t shoot_block_check(struct shoot *shoot)
   if (shoot == NULL)
     return -RM_INVAL;
 
-  if (shoot->motor.current > shoot->param.block_current)
+  if (shoot->motor[SHOOT_MOTOR_INDEX_1].current > shoot->param.block_current)
   {
     if (first_block_f == 0)
     {
@@ -367,7 +326,8 @@ static int32_t shoot_cmd_ctrl(struct shoot *shoot)
  
 	if(shoot->fric_spd[0] < (FRIC_MAX_SPEED+FRIC_MIN_SPEED)/2 || shoot->fric_spd[1] < (FRIC_MAX_SPEED+FRIC_MIN_SPEED)/2)
 	{
-		controller_disable(&(shoot->ctrl));
+		controller_disable(&(shoot->ctrl[SHOOT_MOTOR_INDEX_1]));
+    controller_disable(&(shoot->ctrl[SHOOT_MOTOR_INDEX_2]));
 	}
 	
   return RM_OK;
@@ -390,7 +350,7 @@ static int32_t shoot_fric_ctrl(struct shoot *shoot)
   {
     if (shoot->target.fric_spd[0] < shoot->fric_spd[0])
     {
-      if(shoot->fric_spd[0]>shoot->target.fric_spd[0]-10)
+      if(shoot->fric_spd[0]>shoot->target.fric_spd[0]-15)
         shoot->fric_spd[0] -= 0.03125f;
       else
         shoot->fric_spd[0] -= 1;
@@ -404,7 +364,7 @@ static int32_t shoot_fric_ctrl(struct shoot *shoot)
   {
     if (shoot->target.fric_spd[1] < shoot->fric_spd[1])
     {
-      if(shoot->fric_spd[1]>shoot->target.fric_spd[1]-10)
+      if(shoot->fric_spd[1]>shoot->target.fric_spd[1]-15)
         shoot->fric_spd[1] -= 0.03125f;
       else
         shoot->fric_spd[1] -= 1;
@@ -440,21 +400,12 @@ static int32_t shoot_pid_input_convert(struct controller *ctrl, void *input)
  */
 static uint8_t trigger_motor_status(struct shoot * shoot)
 {
-  #ifndef HERO_ROBOT
-  int32_t  bullet_passing_offset = ((shoot->motor.data.total_angle/36)%360)%45;
+  int32_t  bullet_passing_offset = ((shoot->motor[SHOOT_MOTOR_INDEX_1].data.total_angle/36)%360)%45;
   bullet_passing_offset = abs(bullet_passing_offset);
-  if(bullet_passing_offset>=5 && bullet_passing_offset<40 && shoot->motor.data.ecd!=shoot->motor.data.last_ecd)
+  if(bullet_passing_offset>=5 && bullet_passing_offset<40 && shoot->motor[SHOOT_MOTOR_INDEX_1].data.ecd!=shoot->motor[SHOOT_MOTOR_INDEX_1].data.last_ecd)
     return TRIG_BOUNCE_UP;
   else 
     return TRIG_PRESS_DOWN;
-  #else
-  int32_t  bullet_passing_offset =((shoot->motor.data.total_angle/36)%360)%72;
-  bullet_passing_offset = abs(bullet_passing_offset);
-  if(bullet_passing_offset>=5 && bullet_passing_offset<67 && shoot->motor.data.ecd!=shoot->motor.data.last_ecd)
-    return TRIG_BOUNCE_UP;
-  else 
-    return TRIG_PRESS_DOWN;
-  #endif
 }
 
 /**Edited by Y.H Liu

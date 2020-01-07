@@ -27,13 +27,16 @@
 #include "motor.h"
 #include "pid_controller.h"
 
+#define SHOOT_MOTOR_INDEX_1 0
+#define SHOOT_MOTOR_INDEX_2 1
+
 #define SHOOT_STOP_CMD (0u)
 #define SHOOT_ONCE_CMD (1u)
 #define SHOOT_CONTINUOUS_CMD (2u)
 
 #define FRIC_STOP_SPEED 100u
-#define FRIC_MAX_SPEED 149u //MAX=200u, for safety set it to be 160 //160 results in overheater
-#define FRIC_CON_SPEED 140u
+#define FRIC_MAX_SPEED 150u //MAX=200u, for safety set it to be 160 //160 results in overheater
+#define FRIC_CON_SPEED 138u //140u
 #define FRIC_MIN_SPEED 99u
 
 #define BLOCK_CURRENT_DEFAULT 9500.0F
@@ -92,10 +95,10 @@ struct shoot
 
   struct shoot_target target;
 
-  struct motor_device motor;
-  struct pid motor_pid;
-  struct pid_feedback motor_feedback;
-  struct controller ctrl;
+  struct motor_device motor[2];
+  struct pid motor_pid[2];
+  struct pid_feedback motor_feedback[2];
+  struct controller ctrl[2];
 };
 
 shoot_t shoot_find(const char *name);

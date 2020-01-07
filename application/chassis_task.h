@@ -17,7 +17,7 @@
 
 #ifndef __CHASSIS_TASK_H__
 #define __CHASSIS_TASK_H__
-#define HERO_ROBOT
+
 
 #ifdef CHASSIS_TASK_H_GLOBAL
   #define CHASSIS_TASK_H_EXTERN 
@@ -52,9 +52,9 @@ int get_chassis_power(struct chassis_power *chassis_power);
 #define NO_BUFFER_TIME_TH 3000
 #define CHASSIS_POWER_CTRL
 
-#ifdef HERO_ROBOT
+
 #define DODGING_TH 25.0f
-#endif
+
 #ifdef CHASSIS_POWER_CTRL
 #define MOTOR_TORQUE_CURRENT_CO 0.1F
 #define SUPER_CAP_HOLDING_TIME 300u
