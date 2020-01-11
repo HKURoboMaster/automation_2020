@@ -68,7 +68,7 @@ chassis_t chassis_find(const char *name);
 
 int32_t chassis_pid_register(struct chassis *chassis, const char *name, enum device_can can);
 int32_t chassis_execute(struct chassis *chassis);
-int32_t chassis_gyro_update(struct chassis *chassis, float yaw_angle, float yaw_rate);
+
 int32_t chassis_set_vw(struct chassis *chassis, float vw);
 int32_t chassis_set_vx_vy(struct chassis *chassis, float vx, float vy);
 int32_t chassis_set_speed(struct chassis *chassis, float vx, float vy, float vw);

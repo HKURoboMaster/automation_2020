@@ -36,13 +36,15 @@ static void chassis_imu_update(void *argc);
 float enforce_direction(float vy, int direction);
 void reset_dir_enforcing(void);
 
-int boost_state_flag = 1;
+int boost_state_flag = 0;
+
 //=======ir & control global var========
 int left_blocked = 0, right_blocked = 0;  //IR detects if left or right side is blocked
 int left_ir_js = 0, right_ir_js = 0;  // for jscope
 
 //=======chassis movement logic global var========
-chassis_state_t state = {IDLE_STATE, IDLE_CONSTANT_SPEED}; //The state of chassis
+chassis_state_t state = {MEDIUM_MODE, MEDIUM_CONSTANT_SPEED}; //The state of chassis
+
 cv_dynamic_event_t dynamic_eve = ENEMY_STAY_STILL;
 cv_static_event_t static_eve = ENEMY_NOT_DETECTED;
 power_event_t power_eve = POWER_NORMAL;
@@ -68,12 +70,16 @@ int32_t power_pidout_js;
 int32_t power_js;
 uint8_t current_excess_flag_js;
 uint8_t sensor_offline = 0;
-enum current_state_t {
+int32_t manual_handle_debug_flag = 1;
+
+enum current_state_t 
+{
 	NORMAL, EXCEED_WO_BUFF, EXCEED_W_BUFF
 } current_state;
+
 #define CURRENT_OFFLINE 0x0Fu
 #define VOLTAGE_OFFLINE 0xF0u
-
+#define manual_handle_debug
 
 /** Edited by Y.H. Liu
   * @Jun 12, 2019: modified the mode switch
@@ -83,10 +89,10 @@ enum current_state_t {
   *
   * Implement the customized control logic and FSM, details in Control.md
 */
-#ifdef CHASSIS_POWER_CTRL
+//#ifdef CHASSIS_POWER_CTRL
   #include "referee_system.h"
   static uint8_t superCapacitor_Ctrl(chassis_t pchassis, uint8_t low_cap_flag);
-#endif
+//#endif
 
 uint8_t dodging = 0;
 
@@ -103,108 +109,92 @@ void chassis_task(void const *argument)
   {
     prc_info = rc_device_get_info(prc_dev);
   }
-  else
-  {
-  }
-
+  
   soft_timer_register(chassis_push_info, (void *)pchassis, 10);
 
   pid_struct_init(&pid_follow, MAX_CHASSIS_VW_SPEED*0.85f, 50, 7.673848152f, 0.0f, 2.0f);
 
-  generate_movement(); // initialize a movement
+  generate_random_movement(); // initialize a movement
 
-  set_state(&state, 	NORMAL_STATE); // default state: NORMAL
+  set_state(&state, MEDIUM_MODE); // default state: medium
 
   while (1)
   {
     check_ir_signal(); // check ir signals
     
     float vx, vy, wz;
-		
-		if (rc_device_get_state(prc_dev, RC_S2_DOWN) != RM_OK) {
-			if (rc_device_get_state(prc_dev, RC_S2_MID) == RM_OK) {	// if using rc for debugging
-				vy = -(float)prc_info->ch3 / 660 * MAX_CHASSIS_VY_SPEED;
-			}
-			else if (rc_device_get_state(prc_dev, RC_S2_UP) == RM_OK) {	// if using autonomous
-				ext_power_heat_data_t * referee_power = get_heat_power();
+    /**
+    * Yemi 9 Jan
+    * @brief Change manual handle method for debugging
+    */
+  ext_power_heat_data_t * referee_power = get_heat_power();
+  if (boost_state_flag == 1)
+  {
+    vy = chassis_random_movement(pchassis, get_spd(&state));
+  }
+  else // normal state movement
+  {
+    vy = chassis_patrol_movement(pchassis, get_spd(&state));
+  }
 
-				vy = chassis_random_movement(pchassis, get_spd(&state));
-				vy_js = vy * 1000;
-				float raw_vy = vy;
-				
-				
-				if ((chassis_cam_L && !chassis_cam_R)|| gimbal_cam_enemy == 1) {
-					vy = enforce_direction(vy, -1.0);
-					if ( boost_state_flag == 1 ) 
-					{
-						
-						set_state(&state, 	BOOST_STATE);
-						boost_state_flag = 0 ;
-					} 
-				}
-				else if (chassis_cam_R && !chassis_cam_L) {
-					vy = enforce_direction(vy, 1.0);
-					if ( boost_state_flag == 1 ) 
-					{
-						set_state(&state, 	BOOST_STATE);
-						boost_state_flag = 0 ;
-					} 
-				}
-				else if (chassis_cam_R && chassis_cam_L) {
-					if ( boost_state_flag == 1 ) 
-					{
-						set_state(&state, 	BOOST_STATE);
-						boost_state_flag = 0 ;
-					} 
-				}
-				else {
-					set_state(&state, 	NORMAL_STATE);
-					reset_dir_enforcing();
-				}
-				if(referee_power->chassis_power_buffer > 150 )
-				{
-					boost_state_flag = 1;
-				}
-				if (referee_power->chassis_power_buffer < 75)
-				{
-					set_state(&state, 	NORMAL_STATE);
-				}
-				if (referee_power->chassis_power_buffer <30)
-				{
-					set_state(&state, IDLE_STATE);
-				}
-				
-				if (vy == 0) {
-					//generate_movement(); // bounce off by another movement
-					//adjust_accumulated_distance(raw_vy);
-				}
-				vy = direction_control(vy);
-			}
-		}
-    
-		chassis_set_offset(pchassis, 0, 0);
-		chassis_set_speed(pchassis, 0, vy, 0);
-		chassis_set_acc(pchassis, 0, 0, 0);					
-		
-		if (rc_device_get_state(prc_dev, RC_S2_DOWN) == RM_OK) {
-			chassis_disable(pchassis);
-		}
-		else {
-			chassis_enable(pchassis);
-		}
-		
-		#ifdef CHASSIS_POWER_CTRL
-      uint8_t current_excess_flag = 0;
-      uint8_t low_volatge_flag = 0xFF;
-      do
+  if(manual_handle_debug_flag == 1)
+  {
+    if (rc_device_get_state(prc_dev, RC_S2_MID) == RM_OK) // debug starts
+    {	
+      if (chassis_cam_L || chassis_cam_R || gimbal_cam_enemy == 1)
       {
-        chassis_imu_update(pchassis);
+        set_state(&state, BOOST_MODE);
+        boost_state_flag = 1;
+      }
+      else
+      {
+        set_state(&state, MEDIUM_MODE);
+        boost_state_flag = 0;
+      }
+      if (referee_power->chassis_power_buffer > 150)
+      {
+        boost_state_flag = 1;
+      }
+      vy = direction_control(vy);
+		}
+  }
+  else
+  {
+    if (chassis_cam_L || chassis_cam_R || gimbal_cam_enemy == 1)
+      {
+        set_state(&state, BOOST_MODE);
+        boost_state_flag = 1;
+      }
+      else
+      {
+        set_state(&state, MEDIUM_MODE);
+        boost_state_flag = 0;
+      }
+      if (referee_power->chassis_power_buffer > 150)
+      {
+        boost_state_flag = 1;
+      }
+      vy = direction_control(vy);
+  }
+  
+	chassis_set_offset(pchassis, 0, 0);
+	chassis_set_speed(pchassis, 0, vy, 0);
+	chassis_set_acc(pchassis, 0, 0, 0);					
+		
+	chassis_enable(pchassis);
+		
+	#ifdef CHASSIS_POWER_CTRL
+    uint8_t current_excess_flag = 0;
+    uint8_t low_volatge_flag = 0xFF;
+    do
+    {
+      chassis_imu_update(pchassis);
 				
-        get_chassis_power(&chassis_power); // Power Value Getter
-        if(sensor_offline & CURRENT_OFFLINE)
-        {
-          chassis_power.current = (float)(abs(pchassis->motor[1].current) + abs(pchassis->motor[3].current))*0.001f/2;
-        }
+      get_chassis_power(&chassis_power); // Power Value Getter
+      if(sensor_offline & CURRENT_OFFLINE)
+      {
+        chassis_power.current = (float)(abs(pchassis->motor[1].current) + abs(pchassis->motor[3].current))*0.001f/2;
+      }
         chassis_execute(pchassis);
 				current_js_smooth = (int) (chassis_power.current*1000);
         osDelayUntil(&period, 2);
@@ -225,7 +215,7 @@ void chassis_task(void const *argument)
         {
           current_excess_flag = 0;
         }
-        if(chassis_power.voltage<LOW_VOLTAGE || sensor_offline&VOLTAGE_OFFLINE)
+        if(chassis_power.voltage < LOW_VOLTAGE || sensor_offline & VOLTAGE_OFFLINE)
           low_volatge_flag = 1;          
         else
           low_volatge_flag = 0;
@@ -275,7 +265,6 @@ static void chassis_imu_update(void *argc)
   mpu_get_data(&mpu_sensor);
   mahony_ahrs_updateIMU(&mpu_sensor, &mahony_atti);
   chassis_yaw_js = mahony_atti.yaw;
-  chassis_gyro_update(pchassis, -mahony_atti.yaw, -mpu_sensor.wz * RAD_TO_DEG);
 }
 
 #ifdef CHASSIS_POWER_CTRL
@@ -348,12 +337,15 @@ int get_chassis_power(struct chassis_power *chassis_power)
  * Jerry 10 Jul
  * @brief Control the direction of v so that sentry won't crash.
  */
-float direction_control(float v) {
+float direction_control(float v) 
+{
   float res_v;
-  if (left_blocked) {
+  if (left_blocked) 
+  {
     res_v = (v < 0 ? 0 : v);
   }
-  if (right_blocked) {
+  if (right_blocked) 
+  {
     res_v = (v > 0 ? 0 : v);
   }
   return res_v;
@@ -364,7 +356,8 @@ float direction_control(float v) {
  * @brief Update IR Sensor's signal as well as updating jscope
  * variables.
  */
-void check_ir_signal(void) {
+void check_ir_signal(void) 
+{
   left_blocked = (HAL_GPIO_ReadPin(IR_LEFT_Port, IR_LEFT_Pin) == GPIO_PIN_RESET);
   right_blocked = (HAL_GPIO_ReadPin(IR_RIGHT_Port, IR_RIGHT_Pin) == GPIO_PIN_RESET);
   left_ir_js = left_blocked ? 5000 : 0;

@@ -66,7 +66,10 @@ int32_t chassis_pid_register(struct chassis *chassis, const char *name, enum dev
   {
     err = motor_device_register(&(chassis->motor[i]), motor_name[i], 0);
     if (err != RM_OK)
-      goto end;
+    {
+      object_detach(&(chassis->parent));
+      return err;
+    }
   }
 
   memcpy(&motor_name[0][name_len], "_CTLFR\0", 7);
@@ -78,14 +81,12 @@ int32_t chassis_pid_register(struct chassis *chassis, const char *name, enum dev
   {
     err = pid_controller_register(&(chassis->ctrl[i]), motor_name[i], &(chassis->motor_pid[i]), &(chassis->motor_feedback[i]), 1);
     if (err != RM_OK)
-      goto end;
+    {
+      object_detach(&(chassis->parent));
+      return err;
+    }
   }
-
   return RM_OK;
-end:
-  object_detach(&(chassis->parent));
-
-  return err;
 }
 
 int32_t chassis_execute(struct chassis *chassis)
@@ -129,21 +130,18 @@ int32_t chassis_execute(struct chassis *chassis)
     controller_set_input(&chassis->ctrl[i], chassis->mecanum.wheel_rpm[i]);
     controller_execute(&chassis->ctrl[i], (void *)pdata);
     controller_get_output(&chassis->ctrl[i], &motor_out);
-
-    motor_device_set_current(&chassis->motor[i], (int16_t)motor_out);
   }
+  ///////start of setting current
+    /////right side
+  motor_device_set_current(&chassis->motor[0], (int16_t)motor_out);
+  motor_device_set_current(&chassis->motor[3], (int16_t)motor_out);
+    /////left side
+  motor_device_set_current(&chassis->motor[1], -(int16_t)motor_out);
+  motor_device_set_current(&chassis->motor[2], -(int16_t)motor_out);
+  //////end of setting current
 
   mecanum_position_measure(&(chassis->mecanum), wheel_fdb);
 
-  return RM_OK;
-}
-
-int32_t chassis_gyro_update(struct chassis *chassis, float yaw_angle, float yaw_rate)
-{
-  if (chassis == NULL)
-    return -RM_INVAL;
-  chassis->mecanum.gyro.yaw_gyro_angle = yaw_angle;
-  chassis->mecanum.gyro.yaw_gyro_rate = yaw_rate;
   return RM_OK;
 }
 

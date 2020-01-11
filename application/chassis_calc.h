@@ -9,12 +9,15 @@
 
 #include "chassis_task.h"
 
-#define IDLE_CONSTANT_SPEED 500  //speed of idle state
-#define NORMAL_CONSTANT_SPEED 700 //speed of normal state
-#define BOOST_CONSTANT_SPEED 1000  //speed of boost state
+#define LOW_CONSTANT_SPEED 500 //speed of low state
+#define MEDIUM_CONSTANT_SPEED 700 //speed of medium state
+#define HIGH_CONSTANT_SPEED 1000  //speed of high state
 
-typedef enum chassis_state_name {
-  IDLE_STATE, NORMAL_STATE, BOOST_STATE
+typedef enum chassis_state_name 
+{
+  LOW_MODE, // Restore energy
+  MEDIUM_MODE, // Close to limitation
+  BOOST_MODE // Beyond limitation
 } chassis_state_name_t;
 
 //enemy static state detection from tx2
@@ -73,19 +76,17 @@ typedef struct middle_dodge_settings {
 } middle_dodge_settings_t;
 
 float chassis_random_movement(chassis_t pchassis, float speed);
-void generate_movement(void);
-void forced_movement(int spd_ind, int duration);
+float chassis_patrol_movement(chassis_t pchassis, float speed);
+void generate_random_movement(void);
+void generate_patrol_movement(void); 
 void set_duration(int new_duration_floor, int new_duration_ceiling);
 void activate_bounded_movement(int range);
 void deactivate_bounded_movement(void);
 void adjust_accumulated_distance(float adjust_vy);
-void move_to_middle(void);
 
-void state_calc(chassis_state_t *state, cv_static_event_t static_eve, power_event_t power_eve, armor_event_t armor_eve);
-void update_events(cv_dynamic_event_t *dynamic_eve,cv_static_event_t *static_eve, power_event_t *power_eve, armor_event_t* armor_eve);
 
 void set_state(chassis_state_t * state, chassis_state_name_t dest_state);
-chassis_state_name_t get_state(const chassis_state_t * state);
+
 float get_spd(const chassis_state_t * state);
 
 #endif
