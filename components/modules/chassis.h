@@ -72,7 +72,6 @@ int32_t chassis_execute(struct chassis *chassis);
 int32_t chassis_set_vw(struct chassis *chassis, float vw);
 int32_t chassis_set_vx_vy(struct chassis *chassis, float vx, float vy);
 int32_t chassis_set_speed(struct chassis *chassis, float vx, float vy, float vw);
-int32_t chassis_set_acc(struct chassis *chassis, float ax, float ay, float wz);
 int32_t chassis_set_offset(struct chassis *chassis, float offset_x, float offset_y);
 int32_t chassis_get_info(struct chassis *chassis, struct chassis_info *info);
 

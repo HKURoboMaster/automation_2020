@@ -36,12 +36,14 @@ static void chassis_imu_update(void *argc);
 float enforce_direction(float vy, int direction);
 void reset_dir_enforcing(void);
 
-int boost_state_flag = 0;
 
 //=======ir & control global var========
 int left_blocked = 0, right_blocked = 0;  //IR detects if left or right side is blocked
 int left_ir_js = 0, right_ir_js = 0;  // for jscope
 
+//==========chassis speed & movement switch=============
+int chassis_speed_flag = MEDIUM_MODE;
+int chassis_movement_flag = PATROL_MOVEMENT_MODE;
 //=======chassis movement logic global var========
 chassis_state_t state = {MEDIUM_MODE, MEDIUM_CONSTANT_SPEED}; //The state of chassis
 
@@ -128,11 +130,11 @@ void chassis_task(void const *argument)
     * @brief Change manual handle method for debugging
     */
   ext_power_heat_data_t * referee_power = get_heat_power();
-  if (boost_state_flag == 1)
+  if (chassis_movement_flag == RANDOM_MOVEMENT_MODE)
   {
     vy = chassis_random_movement(pchassis, get_spd(&state));
   }
-  else // normal state movement
+  else
   {
     vy = chassis_patrol_movement(pchassis, get_spd(&state));
   }
@@ -141,45 +143,34 @@ void chassis_task(void const *argument)
   {
     if (rc_device_get_state(prc_dev, RC_S2_MID) == RM_OK) // debug starts
     {	
-      if (chassis_cam_L || chassis_cam_R || gimbal_cam_enemy == 1)
+      switch (chassis_speed_flag)
       {
-        set_state(&state, BOOST_MODE);
-        boost_state_flag = 1;
-      }
-      else
-      {
-        set_state(&state, MEDIUM_MODE);
-        boost_state_flag = 0;
-      }
-      if (referee_power->chassis_power_buffer > 150)
-      {
-        boost_state_flag = 1;
+        case LOW_MODE:
+          set_state(&state, LOW_MODE);
+        case MEDIUM_MODE:
+          set_state(&state, MEDIUM_MODE);
+        case BOOST_MODE:
+          set_state(&state, BOOST_MODE);
       }
       vy = direction_control(vy);
 		}
   }
   else
   {
-    if (chassis_cam_L || chassis_cam_R || gimbal_cam_enemy == 1)
+    switch (chassis_speed_flag)
       {
-        set_state(&state, BOOST_MODE);
-        boost_state_flag = 1;
+        case LOW_MODE:
+          set_state(&state, LOW_MODE);
+        case MEDIUM_MODE:
+          set_state(&state, MEDIUM_MODE);
+        case BOOST_MODE:
+          set_state(&state, BOOST_MODE);
       }
-      else
-      {
-        set_state(&state, MEDIUM_MODE);
-        boost_state_flag = 0;
-      }
-      if (referee_power->chassis_power_buffer > 150)
-      {
-        boost_state_flag = 1;
-      }
-      vy = direction_control(vy);
+    vy = direction_control(vy);
   }
   
 	chassis_set_offset(pchassis, 0, 0);
-	chassis_set_speed(pchassis, 0, vy, 0);
-	chassis_set_acc(pchassis, 0, 0, 0);					
+	chassis_set_speed(pchassis, 0, vy, 0);			
 		
 	chassis_enable(pchassis);
 		

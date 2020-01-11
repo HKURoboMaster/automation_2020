@@ -112,10 +112,6 @@ int32_t chassis_execute(struct chassis *chassis)
   else
   {
     last_time = get_time_ms_us();
-
-    chassis->mecanum.speed.vx += chassis->acc.ax/1000.0f*period;
-    chassis->mecanum.speed.vy += chassis->acc.ay/1000.0f*period;
-    chassis->mecanum.speed.vw += chassis->acc.wz/1000.0f*period;
   }
   
   mecanum_calculate(&(chassis->mecanum));
@@ -130,15 +126,9 @@ int32_t chassis_execute(struct chassis *chassis)
     controller_set_input(&chassis->ctrl[i], chassis->mecanum.wheel_rpm[i]);
     controller_execute(&chassis->ctrl[i], (void *)pdata);
     controller_get_output(&chassis->ctrl[i], &motor_out);
+
+    motor_device_set_current(&chassis->motor[i], (int16_t)motor_out);
   }
-  ///////start of setting current
-    /////right side
-  motor_device_set_current(&chassis->motor[0], (int16_t)motor_out);
-  motor_device_set_current(&chassis->motor[3], (int16_t)motor_out);
-    /////left side
-  motor_device_set_current(&chassis->motor[1], -(int16_t)motor_out);
-  motor_device_set_current(&chassis->motor[2], -(int16_t)motor_out);
-  //////end of setting current
 
   mecanum_position_measure(&(chassis->mecanum), wheel_fdb);
 
@@ -155,15 +145,6 @@ int32_t chassis_set_speed(struct chassis *chassis, float vx, float vy, float vw)
   return RM_OK;
 }
 
-int32_t chassis_set_acc(struct chassis *chassis, float ax, float ay, float wz)
-{
-  if (chassis == NULL)
-    return -RM_INVAL;
-  chassis->acc.ax = ax;
-  chassis->acc.ay = ay;
-  chassis->acc.wz = wz;
-  return RM_OK;
-}
 
 int32_t chassis_set_vw(struct chassis *chassis, float vw)
 {

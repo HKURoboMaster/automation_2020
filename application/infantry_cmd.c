@@ -220,7 +220,6 @@ void infantry_cmd_task(void const *argument)
       else
       {
         chassis_set_speed(pchassis, 0, 0, 0);
-        chassis_set_acc(pchassis, 0, 0, 0);
         shoot_set_cmd(pshoot, SHOOT_STOP_CMD, 0);
       }
     }
