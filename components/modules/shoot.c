@@ -165,9 +165,9 @@ int32_t shoot_get_fric_speed(struct shoot *shoot, float *fric_spd1, float *fric_
     return -RM_INVAL;
   uint16_t fric_pwm_1, fric_pwm_2;
   fric_get_speed(&fric_pwm_1, &fric_pwm_2);
-  *fric_spd1 = *fric_spd1 - (int16_t)*fric_spd1;
+  *fric_spd1 = *fric_spd1 - (int16_t)*fric_spd1; // set fric_spd to 0
   *fric_spd2 = *fric_spd2 - (int16_t)*fric_spd2;
-  *fric_spd1 += fric_pwm_1;
+  *fric_spd1 += fric_pwm_1;  // set fric_spd to fric_pwm
   *fric_spd2 += fric_pwm_2;
   return RM_OK;
 }
@@ -202,8 +202,7 @@ int32_t shoot_execute(struct shoot *shoot)
     return -RM_INVAL;
 
   shoot_fric_ctrl(shoot);
-  // shoot_block_check(shoot); Inside the shoot_cmd_ctrl and inside state_update
-  shoot_cmd_ctrl(shoot);
+  shoot_cmd_ctrl(shoot); // shoot_block_check(shoot); Inside the shoot_cmd_ctrl and inside state_update
 
   pdata = motor_device_get_data(&(shoot->motor));
 	
@@ -335,7 +334,7 @@ static int32_t shoot_block_check(struct shoot *shoot)
  * 
  * Set the controlling signals for the trigger motor
  */
-static int32_t shoot_cmd_ctrl(struct shoot *shoot)
+static int32_t shoot_cmd_ctrl(struct shoot * shoot)
 {
   if (shoot == NULL)
     return -RM_INVAL;
@@ -390,10 +389,7 @@ static int32_t shoot_fric_ctrl(struct shoot *shoot)
   {
     if (shoot->target.fric_spd[0] < shoot->fric_spd[0])
     {
-      if(shoot->fric_spd[0]>shoot->target.fric_spd[0]-10)
-        shoot->fric_spd[0] -= 0.03125f;
-      else
-        shoot->fric_spd[0] -= 1;
+      shoot->fric_spd[0] -= 0.03125f;
     }
     else
     {
@@ -403,11 +399,8 @@ static int32_t shoot_fric_ctrl(struct shoot *shoot)
   if (shoot->target.fric_spd[1] != shoot->fric_spd[1])
   {
     if (shoot->target.fric_spd[1] < shoot->fric_spd[1])
-    {
-      if(shoot->fric_spd[1]>shoot->target.fric_spd[1]-10)
+    { 
         shoot->fric_spd[1] -= 0.03125f;
-      else
-        shoot->fric_spd[1] -= 1;
     }
     else
     {
@@ -418,8 +411,7 @@ static int32_t shoot_fric_ctrl(struct shoot *shoot)
   VAL_LIMIT(shoot->fric_spd[0], FRIC_STOP_SPEED, FRIC_MAX_SPEED);
   VAL_LIMIT(shoot->fric_spd[1], FRIC_STOP_SPEED, FRIC_MAX_SPEED);
 
-  if(5==strlen(shoot->parent.name))
-	  fric_set_output((uint16_t)shoot->fric_spd[0], (uint16_t)shoot->fric_spd[1]);
+  fric_set_output((uint16_t)shoot->fric_spd[0], (uint16_t)shoot->fric_spd[1]);
 	return RM_OK;
 }
 
