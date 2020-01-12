@@ -17,6 +17,7 @@
 
 #include "shoot.h"
 #include "drv_io.h"
+#include "referee_system.h"
 
 static uint8_t trigger_motor_status(struct shoot * shoot);
 static int32_t shoot_pid_input_convert(struct controller *ctrl, void *input);
@@ -479,4 +480,26 @@ int32_t magazine_lid_cmd(uint8_t cmd)
   else
     MAGA_SERVO = 170;
   return 0;
+}
+
+
+/**Edited by Y. Z. Yang
+ * @Jan 12, 2020: declare the functions to update the shoot overhear event
+ * 
+ * Control the laser. 
+ * @param shoot_eve--- 3 level to determine the degreee of shooting overheat
+ *            
+ */
+void shoot_event_update(shoot_event_t * shoot_eve)
+{
+   ext_power_heat_data_t * referee_power = get_heat_power();
+   if (referee_power->shooter_heat0 >320){  // Q0 = 160 for sentry
+      shoot_eve = SHOOT_OVERHEAT_2X;
+   }
+   else if (referee_power->shooter_heat0 >160 && referee_power->shooter_heat0<320){
+      shoot_eve = SHOOT_OVERHEAT_1X;
+   }
+   else{
+      shoot_eve = SHOOT_NORMAL;
+   }
 }

@@ -1,5 +1,6 @@
 #include "chassis_calc.h"
 #include <stdlib.h>
+#include "referee_system.h"
 
 chassis_movement_t movement = {1, 0, 0}; // current movement of chassis
 duration_settings_t sduration = {500, 2500}; // movement duration settings
@@ -132,4 +133,46 @@ void set_state(chassis_state_t * state, chassis_state_name_t dest_state)
 float get_spd(const chassis_state_t * state) 
 {
   return state->constant_spd;
+}
+
+/**Edited by Y.Z.Yang
+ * @ Jan 2020: define the function to update power_eve and armor_eve
+ * 
+ */
+void update_chassis_event(power_event_t *power_eve, armor_event_t * armor_eve){
+    //**update the armor event
+    ext_robot_hurt_t * referee_armor = get_armor_data();
+    uint32_t now = HAL_GetTick(); 
+    if (referee_armor->update_flag && referee_armor->hurt_type == 0){
+        if (referee_armor->armor_id == 0){
+            armor_eve->armor0_state = HIT_WITHIN_X_SEC;
+            armor_eve->armor0_last_update_time = now;
+            referee_armor->update_flag = 0;
+        }
+        else if(referee_armor->armor_id == 1){
+            armor_eve->armor1_state = HIT_WITHIN_X_SEC;
+            armor_eve->armor1_last_update_time = now;
+            referee_armor->update_flag = 0;
+        }
+    }
+    else{
+        if (now - armor_eve->armor0_last_update_time > armor_eve->interval_TH){
+            armor_eve->armor0_state = HIT_WITHIN_X_SEC;
+        }
+        if (now - armor_eve->armor1_last_update_time > armor_eve->interval_TH){
+            armor_eve->armor1_state = HIT_WITHIN_X_SEC;
+        }
+    }
+
+    //**update the power event
+    ext_power_heat_data_t * referee_power = get_heat_power();
+    if (referee_power->chassis_power_buffer <50){
+        power_eve = POWER_IN_SERIOUS_DEBT;
+    }
+    else if (referee_power->chassis_power_buffer >= 200){
+        power_eve = POWER_NORMAL;
+    }
+    else{
+        power_eve = POWER_IN_DEBT;
+    }
 }

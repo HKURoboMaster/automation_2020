@@ -42,10 +42,20 @@ typedef enum power_event {
 } power_event_t;
 
 //armor information from pc
-typedef enum armor_event {
+typedef struct armor_event {
+  armor_event_name_t armor0_state;
+  armor_event_name_t armor1_state;
+  uint32_t armor0_last_update_time;
+  uint32_t armor1_last_update_time;
+  uint32_t interval_TH; // "X" value for not being hit for X second
+} armor_event_t;
+
+
+typedef enum armor_event_name {
   NO_HIT_FOR_X_SEC, //armor has not been hit for at least x seconds
   HIT_WITHIN_X_SEC //armor has been hit within x seconds
-} armor_event_t;
+} armor_event_name_t;
+
 
 typedef struct chassis_state_t {
   chassis_state_name_t state_name;
@@ -83,7 +93,7 @@ void set_duration(int new_duration_floor, int new_duration_ceiling);
 void activate_bounded_movement(int range);
 void deactivate_bounded_movement(void);
 void adjust_accumulated_distance(float adjust_vy);
-
+void update_chassis_event(power_event_t *power_eve, armor_event_t * armor_eve);
 
 void set_state(chassis_state_t * state, chassis_state_name_t dest_state);
 
