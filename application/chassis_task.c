@@ -7,7 +7,7 @@
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
@@ -50,7 +50,7 @@ chassis_state_t state = {MEDIUM_MODE, MEDIUM_CONSTANT_SPEED}; //The state of cha
 cv_dynamic_event_t dynamic_eve = ENEMY_STAY_STILL;
 cv_static_event_t static_eve = ENEMY_NOT_DETECTED;
 power_event_t power_eve = POWER_NORMAL;
-armor_event_t armor_eve = NO_HIT_FOR_X_SEC;
+armor_event_t armor_eve = {NO_HIT_FOR_X_SEC,NO_HIT_FOR_X_SEC,0,0,2000};  // TO BE CONFIRMED AND MODIFIED
 int vy_js = 0; // for debugging vy
 int chassis_yaw_js = 0;
 
@@ -74,7 +74,7 @@ uint8_t current_excess_flag_js;
 uint8_t sensor_offline = 0;
 int32_t chassis_manual_handle_debug_flag = 1;
 
-enum current_state_t 
+enum current_state_t
 {
 	NORMAL, EXCEED_WO_BUFF, EXCEED_W_BUFF
 } current_state;
@@ -110,7 +110,7 @@ void chassis_task(void const *argument)
   {
     prc_info = rc_device_get_info(prc_dev);
   }
-  
+
   soft_timer_register(chassis_push_info, (void *)pchassis, 10);
 
   pid_struct_init(&pid_follow, MAX_CHASSIS_VW_SPEED*0.85f, 50, 7.673848152f, 0.0f, 2.0f);
@@ -119,67 +119,56 @@ void chassis_task(void const *argument)
 
   set_state(&state, MEDIUM_MODE); // default state: medium
 
-  while (1)
-  {
+  while (1){
     check_ir_signal(); // check ir signals
-    
+    update_chassis_event(&power_eve, &armor_eve);
     float vx, vy, wz;
+
     /**
     * Yemi 9 Jan
     * @brief Change manual handle method for debugging
     */
-  ext_power_heat_data_t * referee_power = get_heat_power();
-  if (chassis_movement_flag == RANDOM_MOVEMENT_MODE)
-  {
-    vy = chassis_random_movement(pchassis, get_spd(&state));
-  }
-  else
-  {
-    vy = chassis_patrol_movement(pchassis, get_spd(&state));
-  }
+    if (rc_device_get_state(prc_dev, RC_S2_DOWN) != RM_OK){
+      if (rc_device_get_state(prc_dev, RC_S2_DOWN) == RM_OK){  //Manual mode
+        vy = -(float)prc_info->ch3 / 660 * MAX_CHASSIS_VY_SPEED;
+      }
+      else if (rc_device_get_state(prc_dev, RC_S2_DOWN) == RM_OK) { // Autonomous mode
+        switch (chassis_speed_flag)
+        {
+          case LOW_MODE:
+            set_state(&state, LOW_MODE);
+            break;
+          case MEDIUM_MODE:
+            set_state(&state, MEDIUM_MODE);
+            break;
+          case BOOST_MODE:
+            set_state(&state, BOOST_MODE);
+            break;
+        }
+        if (chassis_movement_flag == RANDOM_MOVEMENT_MODE){
+          vy = chassis_random_movement(pchassis, get_spd(&state));
+        }
+        else
+        {
+          vy = chassis_patrol_movement(pchassis, get_spd(&state));
+        }
+        vy = direction_control(vy);
+      }
+    }
 
-  if(chassis_manual_handle_debug_flag == 1)
-  {
-    if (rc_device_get_state(prc_dev, RC_S2_MID) == RM_OK) // debug starts
-    {	
-      switch (chassis_speed_flag)
-      {
-        case LOW_MODE:
-          set_state(&state, LOW_MODE);
-        case MEDIUM_MODE:
-          set_state(&state, MEDIUM_MODE);
-        case BOOST_MODE:
-          set_state(&state, BOOST_MODE);
-      }
-      vy = direction_control(vy);
-		}
-  }
-  else
-  {
-    switch (chassis_speed_flag)
-      {
-        case LOW_MODE:
-          set_state(&state, LOW_MODE);
-        case MEDIUM_MODE:
-          set_state(&state, MEDIUM_MODE);
-        case BOOST_MODE:
-          set_state(&state, BOOST_MODE);
-      }
-    vy = direction_control(vy);
-  }
-  
-	chassis_set_offset(pchassis, 0, 0);
-	chassis_set_speed(pchassis, 0, vy, 0);			
-		
-	chassis_enable(pchassis);
-		
-	#ifdef CHASSIS_POWER_CTRL
+
+	  chassis_set_offset(pchassis, 0, 0);
+	  chassis_set_speed(pchassis, 0, vy, 0);
+
+  	chassis_enable(pchassis);
+		ext_power_heat_data_t * referee_power = get_heat_power();
+  	#ifdef CHASSIS_POWER_CTRL
     uint8_t current_excess_flag = 0;
     uint8_t low_volatge_flag = 0xFF;
     do
     {
       chassis_imu_update(pchassis);
-				
+
       get_chassis_power(&chassis_power); // Power Value Getter
       if(sensor_offline & CURRENT_OFFLINE)
       {
@@ -192,7 +181,7 @@ void chassis_task(void const *argument)
         ext_power_heat_data_t * referee_power = get_heat_power();
         shooter_data_sent_by_can(referee_power);
       //set the current & voltage flags
-        if(referee_power->chassis_power_buffer > LOW_BUFFER && 
+        if(referee_power->chassis_power_buffer > LOW_BUFFER &&
            chassis_power.current > (CHASSIS_POWER_TH+LOW_BUFFER)/WORKING_VOLTAGE)
         {
           current_excess_flag = 2;
@@ -206,7 +195,7 @@ void chassis_task(void const *argument)
           current_excess_flag = 0;
         }
         if(chassis_power.voltage < LOW_VOLTAGE || sensor_offline & VOLTAGE_OFFLINE)
-          low_volatge_flag = 1;          
+          low_volatge_flag = 1;
         else
           low_volatge_flag = 0;
       //control the supercap
@@ -281,7 +270,7 @@ int32_t chassis_set_relative_angle(float angle)
 /**Added by Eric Chen
  * @Jun 2019: Define the function & current
  * @Jul 23, 2019: Change the current to be *current* by Y.H. Liu
- * 
+ *
  * BRIEF: refresh the power of the chassis
  * PARAM: chassis_power ---- struct storing the power data
  *        -  current_debug ---- raw data from current sensor
@@ -327,14 +316,14 @@ int get_chassis_power(struct chassis_power *chassis_power)
  * Jerry 10 Jul
  * @brief Control the direction of v so that sentry won't crash.
  */
-float direction_control(float v) 
+float direction_control(float v)
 {
   float res_v;
-  if (left_blocked) 
+  if (left_blocked)
   {
     res_v = (v < 0 ? 0 : v);
   }
-  if (right_blocked) 
+  if (right_blocked)
   {
     res_v = (v > 0 ? 0 : v);
   }
@@ -346,7 +335,7 @@ float direction_control(float v)
  * @brief Update IR Sensor's signal as well as updating jscope
  * variables.
  */
-void check_ir_signal(void) 
+void check_ir_signal(void)
 {
   left_blocked = (HAL_GPIO_ReadPin(IR_LEFT_Port, IR_LEFT_Pin) == GPIO_PIN_RESET);
   right_blocked = (HAL_GPIO_ReadPin(IR_RIGHT_Port, IR_RIGHT_Pin) == GPIO_PIN_RESET);

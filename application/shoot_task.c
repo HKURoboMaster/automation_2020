@@ -45,6 +45,7 @@ enum mouse_cmd{non, click, press};
 typedef enum mouse_cmd mouse_cmd_e;
 mouse_cmd_e mouse_shoot_control(rc_device_t rc_dev);
 static uint16_t get_heat_limit(void);
+shoot_event_name_t shoot_eve = {SHOOT_NORMAL,SHOOT_NORMAL};
 
 void shoot_task(void const *argument)
 {
@@ -55,7 +56,7 @@ void shoot_task(void const *argument)
 	shoot_t pshoot2 = NULL;
   pshoot = shoot_find("shoot");
 	pshoot2 = shoot_find("shoot2");
-  prc_dev = rc_device_find("uart_rc");
+  prc_dev = rc_device_find("can_rc");
 
   if (prc_dev != NULL)
   {
@@ -64,8 +65,6 @@ void shoot_task(void const *argument)
   else
   {
   }
-
-  //uint32_t shoot_time;
 
   static uint8_t fric_on = 0; //0 (0X00)for off, 1 (0xff) for on
   shoot_firction_toggle(pshoot, 1);
@@ -162,6 +161,7 @@ void shoot_task(void const *argument)
 
 
     if (rc_device_get_state(prc_dev, RC_S2_UP)== RM_OK){   //自动模式
+      shoot_event_update(shoot_eve);
       shoot_enable(pshoot2);
       shoot_enable(pshoot); 
       if (fric_on == 0){
@@ -173,10 +173,16 @@ void shoot_task(void const *argument)
         shoot_set_fric_speed(pshoot, FRIC_CON_SPEED, FRIC_CON_SPEED);
         shoot_set_cmd(pshoot, SHOOT_CONTINUOUS_CMD, CONTIN_BULLET_NUM);
       }
+      else{
+        shoot_set_cmd(pshoot, SHOOT_STOP_CMD, 0);
+      }
       if (shoot2_flag){
         shoot_set_fric_speed(pshoot2, FRIC_CON_SPEED, FRIC_CON_SPEED);
         shoot_set_cmd(pshoot2, SHOOT_CONTINUOUS_CMD, CONTIN_BULLET_NUM);
       } 
+      else{
+        shoot_set_cmd(pshoot2, SHOOT_STOP_CMD, 0);
+      }
     }
 
     shoot_execute(pshoot);

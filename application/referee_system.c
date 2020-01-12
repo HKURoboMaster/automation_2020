@@ -198,6 +198,7 @@ void referee_data_handler(uint8_t *p_frame)
     case robotHurt:
       referee_data.robot_hurt.armor_id = *(uint8_t *)(data_addr)&0xF0u;
       referee_data.robot_hurt.hurt_type = *(uint8_t *)(data_addr)&0x0Fu;
+      referee_data.robot_hurt.update_flag = 1;  // modified by Y.Z. Yang
       break;
     case shootData:
       referee_data.shoot_data.bullet_type = *(uint8_t *)(data_addr);
@@ -502,4 +503,15 @@ ext_game_robot_state_t * get_robot_state(void)
 ext_event_data_t * get_rfid_data(void)
 {
   return &referee_data.event_data;
+}
+
+
+/** Added by Y. Z. Yang
+ * @Jan 12, 2020: retrieve the struct storing the armor message
+ * 
+ * @ Ret: address of the struct armor hit message
+ */
+ext_robot_hurt_t * get_armor_data(void)
+{
+  return &referee_data.robot_hurt;
 }

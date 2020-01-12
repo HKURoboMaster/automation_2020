@@ -201,6 +201,7 @@ typedef struct
 {
    uint8_t armor_id : 4;
    uint8_t hurt_type : 4;
+   uint32_t update_flag;
 } ext_robot_hurt_t; 
 //Id = 0x0206
 
@@ -291,4 +292,5 @@ void        ref_append_crc16(uint8_t* p_msg, uint32_t len);
 ext_power_heat_data_t * get_heat_power(void);
 ext_game_robot_state_t * get_robot_state(void);
 ext_event_data_t * get_rfid_data(void);
+ext_robot_hurt_t * get_armor_data(void);
 #endif // __REFEREE_SYSTEM_H__
