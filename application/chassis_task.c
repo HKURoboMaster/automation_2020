@@ -72,7 +72,7 @@ int32_t power_pidout_js;
 int32_t power_js;
 uint8_t current_excess_flag_js;
 uint8_t sensor_offline = 0;
-int32_t manual_handle_debug_flag = 1;
+int32_t chassis_manual_handle_debug_flag = 1;
 
 enum current_state_t 
 {
@@ -81,7 +81,6 @@ enum current_state_t
 
 #define CURRENT_OFFLINE 0x0Fu
 #define VOLTAGE_OFFLINE 0xF0u
-#define manual_handle_debug
 
 /** Edited by Y.H. Liu
   * @Jun 12, 2019: modified the mode switch
@@ -139,7 +138,7 @@ void chassis_task(void const *argument)
     vy = chassis_patrol_movement(pchassis, get_spd(&state));
   }
 
-  if(manual_handle_debug_flag == 1)
+  if(chassis_manual_handle_debug_flag == 1)
   {
     if (rc_device_get_state(prc_dev, RC_S2_MID) == RM_OK) // debug starts
     {	
