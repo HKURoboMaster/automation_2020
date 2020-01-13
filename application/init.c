@@ -32,6 +32,7 @@
 #include "shoot_task.h"
 #include "communicate.h"
 #include "infantry_cmd.h"
+#include "tong_task.h"
 #include "init.h"
 
 #include "protocol.h"
@@ -44,6 +45,7 @@ struct chassis chassis;
 struct gimbal gimbal;
 struct shoot shoot;
 struct shoot shoot2;//Leo
+struct tong tong;//Huan
 static struct rc_device rc_dev;
 
 static uint8_t glb_sys_cfg;
@@ -84,7 +86,7 @@ void hw_init(void)
   {
     rc_device_register(&rc_dev, "can_rc", 0);
     gimbal_cascade_register(&gimbal, "gimbal", DEVICE_CAN1);
-
+    tong_cascade_register(&tong, "tong", DEVICE_CAN1);
     shoot_pid_register(&shoot, "shoot", DEVICE_CAN1);
 		shoot_pid_register2(&shoot2, "shoot2", DEVICE_CAN1);
     gimbal_yaw_disable(&gimbal);

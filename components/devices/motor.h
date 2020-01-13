@@ -81,6 +81,12 @@ struct motor_device
   void (*get_data)(motor_device_t, uint8_t*);
 };
 
+enum linear_actuator_command
+  {
+    OFF = 0,
+    ON , 
+  };
+
 typedef int32_t (*fn_can_send)(enum device_can can, struct can_msg);
 
 void motor_device_can_send_register(fn_can_send fn);

@@ -261,9 +261,6 @@ void gimbal_task(void const *argument)
   {
     prc_info = rc_device_get_info(prc_dev);
   }
-  else
-  {
-  }
 
   soft_timer_register(imu_temp_keep, (void *)pgimbal, 5);
   soft_timer_register(gimbal_push_info, (void *)pgimbal, 10);

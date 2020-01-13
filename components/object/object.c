@@ -26,6 +26,8 @@ enum object_info_type
   Object_Info_Chassis = 3,
   Object_Info_Gimbal = 4,
   Object_Info_Shoot = 5,
+  Object_Info_Tong = 6,
+  Object_Info_Raiser = 7,
   Object_Info_Unknown, /**< The object is unknown. */
 };
 
@@ -41,14 +43,16 @@ static struct object_information object_container[Object_Info_Unknown] =
         {Object_Class_Module, _OBJ_CONTAINER_LIST_INIT(Object_Info_Module)},
         /* initialize object container - Controller */
         {Object_Class_Controller, _OBJ_CONTAINER_LIST_INIT(Object_Info_Contoller)},
-        /* initialize object container - Controller */
+        /* initialize object container - Chassis */
         {Object_Class_Chassis, _OBJ_CONTAINER_LIST_INIT(Object_Info_Chassis)},
         /* initialize object container - Controller */
-        {Object_Class_Gimbal, _OBJ_CONTAINER_LIST_INIT(Object_Info_Gimbal)},
-        /* initialize object container - Controller */
         {Object_Class_Shoot, _OBJ_CONTAINER_LIST_INIT(Object_Info_Shoot)},
+        /* initialize object container - Controller */
+        {Object_Class_Tong, _OBJ_CONTAINER_LIST_INIT(Object_Info_Tong)},
+        /* initialize object container - Raiser */
+        {Object_Class_Raiser, _OBJ_CONTAINER_LIST_INIT(Object_Info_Raiser)},
 };
-
+ 
 struct object_information *
 object_get_information(enum object_class_type type)
 {
