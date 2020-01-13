@@ -347,64 +347,8 @@ void gimbal_task(void const *argument)
     else //Edited by Yemi: auto mode
     {
       gimbal_set_yaw_mode(pgimbal, ENCODER_MODE);
-#ifdef KALMAN
-      pc_js1 = (int)(auto_aiming_yaw[0] * 1000);
-      pc_js2 = (int)(auto_aiming_pitch[0] * 1000);
-
-      if (time_pc != time_last)
-      {
-        // Update the Time sent From PC.
-        // For checking wheather PC sent data to me.
-        time_last = time_pc;
-
-        yaw_angle_raw = auto_aiming_yaw[0];
-        pit_angle_raw = auto_aiming_pitch[0];
-        // Unit Degree per second
-        ref_yaw_speed = pgimbal->sensor.rate.yaw_rate;
-        ref_pit_speed = pgimbal->sensor.rate.pitch_rate;
-        // By default the time input is time Gap in ms
-        // Unit Degree Per second
-        yaw_speed_raw = auto_aiming_yaw[1];
-        pit_speed_raw = auto_aiming_pitch[1];
-      }
-      if (prc_info->mouse.r || rc_device_get_state(prc_dev, RC_S2_UP) == RM_OK)
-      {
-        yaw_angle_raw += yaw_speed * gim_tim_ms / 1000;
-        pit_angle_raw += pit_speed * gim_tim_ms / 1000;
-        yaw_kf_data = kalman_filter_calc(&yaw_kalman_filter, yaw_angle_raw, yaw_speed_raw);
-        pit_kf_data = kalman_filter_calc(&pit_kalman_filter, pit_angle_raw, pit_speed_raw);
-        kalman_yaw_js[0] = (int)((yaw_kf_data[0] + yaw_kf_data[1] * 0.123f) * 1000);
-        kalman_yaw_js[1] = (int)(yaw_kf_data[1] * 1000);
-        kalman_pit_js[0] = (int)((pit_kf_data[0] + pit_kf_data[1] * 0.1f) * 1000);
-        kalman_pit_js[1] = (int)(pit_kf_data[1] * 1000);
-
-        // The reason to implement PC counter is that kalman filter need time to converge
-        // The PC_counter make it possible to converge.
-        if (pc_counter == 200)
-        {
-          // Equavalent to P only control. Need a I term.
-          // Set angle speed is no matter what set the difference of angle
-          if ((yaw_kf_data[0] - yaw_autoaim_offset + yaw_kf_data[1] * 0.273f) > 3.0f)
-            gimbal_set_yaw_speed(pgimbal, yaw_kf_data[0]);
-          else
-            gimbal_set_yaw_speed(pgimbal, yaw_kf_data[0]);
-          //gimbal_set_yaw_speed(pgimbal,0.1*yaw_kf_data[0]);
-          if ((pit_kf_data[0] - pitch_autoaim_offset + pit_kf_data[1] * 0.273f) > 3.0f)
-            gimbal_set_pitch_speed(pgimbal, pit_kf_data[0]);
-          else
-            gimbal_set_pitch_speed(pgimbal, pit_kf_data[0]);
-        }
-        else
-          pc_counter++;
-      }
-      else
-      {
-        pc_counter = 0;
-      }
-#endif
-      ////////////!!!!!!!!!!!!!!!!!!!Warning: need pit_delta and yaw_delta!!!!!!!!!!!!!!!!!
-      // gimbal_set_pitch_delta(pgimbal, pit_delta);
-      // gimbal_set_yaw_delta(pgimbal, yaw_delta);
+      gimbal_set_pitch_delta(pgimbal, pit_delta);
+      gimbal_set_yaw_delta(pgimbal, yaw_delta);
     }
 
     if (rc_device_get_state(prc_dev, RC_S2_DOWN) == RM_OK)
