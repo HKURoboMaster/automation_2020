@@ -167,12 +167,12 @@ void update_chassis_event(power_event_t *power_eve, armor_event_t * armor_eve){
     //**update the power event
     ext_power_heat_data_t * referee_power = get_heat_power();
     if (referee_power->chassis_power_buffer <50){
-        power_eve = POWER_IN_SERIOUS_DEBT;
+        power_eve = (power_event_t *)POWER_IN_SERIOUS_DEBT;
     }
     else if (referee_power->chassis_power_buffer >= 200){
-        power_eve = POWER_NORMAL;
+        power_eve = (power_event_t *)POWER_NORMAL;
     }
     else{
-        power_eve = POWER_IN_DEBT;
+        power_eve = (power_event_t *)POWER_IN_DEBT;
     }
 }

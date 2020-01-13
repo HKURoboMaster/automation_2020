@@ -41,6 +41,11 @@ typedef enum power_event {
   POWER_IN_SERIOUS_DEBT //considerable use of buffer power
 } power_event_t;
 
+typedef enum armor_event_name {
+  NO_HIT_FOR_X_SEC, //armor has not been hit for at least x seconds
+  HIT_WITHIN_X_SEC //armor has been hit within x seconds
+} armor_event_name_t;
+
 //armor information from pc
 typedef struct armor_event {
   armor_event_name_t armor0_state;
@@ -49,13 +54,6 @@ typedef struct armor_event {
   uint32_t armor1_last_update_time;
   uint32_t interval_TH; // "X" value for not being hit for X second
 } armor_event_t;
-
-
-typedef enum armor_event_name {
-  NO_HIT_FOR_X_SEC, //armor has not been hit for at least x seconds
-  HIT_WITHIN_X_SEC //armor has been hit within x seconds
-} armor_event_name_t;
-
 
 typedef struct chassis_state_t {
   chassis_state_name_t state_name;

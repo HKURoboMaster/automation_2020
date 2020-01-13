@@ -45,7 +45,7 @@ enum mouse_cmd{non, click, press};
 typedef enum mouse_cmd mouse_cmd_e;
 mouse_cmd_e mouse_shoot_control(rc_device_t rc_dev);
 static uint16_t get_heat_limit(void);
-shoot_event_name_t shoot_eve = {SHOOT_NORMAL,SHOOT_NORMAL};
+shoot_event_t shoot_eve = {SHOOT_NORMAL,SHOOT_NORMAL};
 
 void shoot_task(void const *argument)
 {
@@ -161,7 +161,7 @@ void shoot_task(void const *argument)
 
 
     if (rc_device_get_state(prc_dev, RC_S2_UP)== RM_OK){   //自动模式
-      shoot_event_update(shoot_eve);
+      shoot_event_update(&shoot_eve);
       shoot_enable(pshoot2);
       shoot_enable(pshoot); 
       if (fric_on == 0){

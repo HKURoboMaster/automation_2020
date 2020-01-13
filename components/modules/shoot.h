@@ -98,16 +98,16 @@ struct shoot
   struct controller ctrl;
 };
 
-typedef struct shoot_event{
-  shoot_event_name_t shoot1_state;
-  shoot_event_name_t shoot2_state;
-}shoot_event_t;
-
 typedef enum shoot_event_name {
   SHOOT_NORMAL, //Q1 < Q0
   SHOOT_OVERHEAT_1X, //Q1>Q0
   SHOOT_OVERHEAT_2X  //Q1>2*Q0
 } shoot_event_name_t;
+
+typedef struct shoot_event{
+  shoot_event_name_t shoot1_state;
+  shoot_event_name_t shoot2_state;
+}shoot_event_t;
 
 shoot_t shoot_find(const char *name);
 int32_t shoot_pid_register(struct shoot *shoot, const char *name, enum device_can can);
