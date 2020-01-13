@@ -31,6 +31,8 @@
 
 #define LEFT_FRICTION        TIM1->CCR1
 #define RIGHT_FRICTION       TIM1->CCR4
+#define LEFT_FRICTION2       TIM4->CCR3
+#define RIGHT_FRICTION2      TIM4->CCR2
 
 #define IMU_PWM_PULSE    TIM3->CCR2
 
@@ -49,6 +51,7 @@
 
 void pwm_device_init(void);
 void fric_set_output(uint16_t  fric_spd1, uint16_t  fric_spd2);
+void fric_set_output2(uint16_t  fric_spd1, uint16_t  fric_spd2);
 void fric_get_speed(uint16_t  *fric_spd1, uint16_t  *fric_spd2);
 
 void mpu_heat_output(uint16_t pwm_pulse);

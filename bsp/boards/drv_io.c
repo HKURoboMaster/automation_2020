@@ -23,15 +23,28 @@ void pwm_device_init(void)
 {
   HAL_TIM_PWM_Start(&htim3,  TIM_CHANNEL_2); // ctrl imu temperature
   HAL_TIM_PWM_Start(&htim12, TIM_CHANNEL_1); // beep
-  HAL_TIM_PWM_Start(&htim1,  TIM_CHANNEL_1); // friction wheel
-  HAL_TIM_PWM_Start(&htim1,  TIM_CHANNEL_4);
+  HAL_TIM_PWM_Start(&htim1,  TIM_CHANNEL_1); // friction wheel for pair 1 LEFT (pshoot)
+  HAL_TIM_PWM_Start(&htim1,  TIM_CHANNEL_4); // friction wheel for pair 1 RIGHT (pshoot)
   HAL_TIM_PWM_Start(&htim4,  TIM_CHANNEL_1); // servo for magazine lid
+  HAL_TIM_PWM_Start(&htim4,  TIM_CHANNEL_2); // friction wheel for pair 2 RIGHT (pshoot2) G
+  HAL_TIM_PWM_Start(&htim4,  TIM_CHANNEL_3); // friction wheel for pair 2 LEFT (pshoot2) F
 }
 
 void fric_set_output(uint16_t  fric_spd1, uint16_t  fric_spd2)
 {
   LEFT_FRICTION = fric_spd1;
   RIGHT_FRICTION = fric_spd2;
+}
+
+/* Edited by Y.Z. Yang 
+ * Jan 13 2020 define the function to control the second barral for the friction wheel
+ * @ LEFT_FRICTION2 is F in boardA, PD14, RIGHT_FRICTION2 IS G with PD13
+ * 
+ */
+void fric_set_output2(uint16_t  fric_spd1, uint16_t  fric_spd2)
+{
+  LEFT_FRICTION2 = fric_spd1;
+  RIGHT_FRICTION2 = fric_spd2;
 }
 
 // Here the value of PWM is directly used as Friction Wheel speed

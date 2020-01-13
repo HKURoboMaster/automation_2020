@@ -24,10 +24,9 @@
 
 int32_t shoot_firction_toggle(shoot_t pshoot, uint8_t toggled);
 
-
 //Seneory shootting control flag
-int32_t shoot1_flag = 0;
-int32_t shoot2_flag = 0;
+int32_t shoot_flag = 0;
+
 
 /**Edited by Y.H. Liu
  * @Jun 13, 2019: change the FSM for shooting
@@ -40,22 +39,26 @@ int32_t shoot2_flag = 0;
  */
 /**Edited by Y.Z. Yang
  * @Jan 11: adaptation for sentry
+ * @Jan 13: Change the data structure of pshoot(By deletting the pshoot2)
  */
-enum mouse_cmd{non, click, press};
+enum mouse_cmd
+{
+  non,
+  click,
+  press
+};
 typedef enum mouse_cmd mouse_cmd_e;
 mouse_cmd_e mouse_shoot_control(rc_device_t rc_dev);
 static uint16_t get_heat_limit(void);
-shoot_event_t shoot_eve = {SHOOT_NORMAL,SHOOT_NORMAL};
+shoot_event_t shoot_eve = {SHOOT_NORMAL, SHOOT_NORMAL};
 
 void shoot_task(void const *argument)
 {
-  uint32_t period = osKernelSysTick();     // Potentail bugs in remote control
+  uint32_t period = osKernelSysTick(); // Potentail bugs in remote control
   rc_device_t prc_dev = NULL;
   rc_info_t prc_info = NULL;
   shoot_t pshoot = NULL;
-	shoot_t pshoot2 = NULL;
   pshoot = shoot_find("shoot");
-	pshoot2 = shoot_find("shoot2");
   prc_dev = rc_device_find("can_rc");
 
   if (prc_dev != NULL)
@@ -67,134 +70,104 @@ void shoot_task(void const *argument)
   }
 
   static uint8_t fric_on = 0; //0 (0X00)for off, 1 (0xff) for on
-  shoot_firction_toggle(pshoot, 1);
-  shoot_firction_toggle(pshoot2, 1);
+  shoot_firction_toggle(pshoot, 1); 
   while (1)
   {
-    if (rc_device_get_state(prc_dev, RC_S2_DOWN) == RM_OK)  // 失能模式 
+    if (rc_device_get_state(prc_dev, RC_S2_DOWN) == RM_OK) // 失能模式
     {
       shoot_disable(pshoot);
-      shoot_disable(pshoot2);
-		//	shoot_set_fric_speed(pshoot,FRIC_MIN_SPEED,FRIC_MIN_SPEED);
-      shoot_firction_toggle(pshoot,1); //1: Close the friction wheel while 0: starts the friction wheel
-      shoot_firction_toggle(pshoot2,1); 
-      fric_on = 0;    // The frction wheel is always close and 0 here!
+      shoot_firction_toggle(pshoot, 1); //1: Close the friction wheel while 0: starts the friction wheel
+      fric_on = 0;                      // The frction wheel is always close and 0 here!
     }
-    
 
-
-
-    if (rc_device_get_state(prc_dev, RC_S2_MID)== RM_OK){  // 手动模式
-      shoot_enable(pshoot2);
-      shoot_enable(pshoot); 
+    if (rc_device_get_state(prc_dev, RC_S2_MID) == RM_OK)// 手动模式
+    { 
+      shoot_enable(pshoot);
       /*------ implement the keyboard and remote control controlling over friction wheel ------*/
-      if (rc_device_get_state(prc_dev, RC_S1_MID2UP) == RM_OK)  // Close or open the friction wheel
+      // Remote control implementation
+      if (rc_device_get_state(prc_dev, RC_S1_MID2UP) == RM_OK) // Close or open the friction wheel
       {
         shoot_firction_toggle(pshoot, fric_on);
-        shoot_firction_toggle(pshoot2, fric_on);
         fric_on = ~fric_on;
       }
 
-      if(prc_dev->rc_info.kb.bit.Z )  // Z+F Close the frinction wheel   F open the frction wheel
+      // Keyboard Implementation
+      if (prc_dev->rc_info.kb.bit.Z) // Z+F Close the frinction wheel   F open the frction wheel
       {
-        if(prc_dev->rc_info.kb.bit.F && !prc_dev->last_rc_info.kb.bit.F) //turn off the fric regardless the situation
+        if (prc_dev->rc_info.kb.bit.F && !prc_dev->last_rc_info.kb.bit.F) //turn off the fric regardless the situation
         {
-          shoot_firction_toggle(pshoot,1);
-          shoot_firction_toggle(pshoot2,1); 
-		  		fric_on = 0;//set fric_on to be 0x00 i.e. off
+          shoot_firction_toggle(pshoot, 1);
+          fric_on = 0; //set fric_on to be 0x00 i.e. off
         }
       }
       else
       {
-        if(prc_dev->rc_info.kb.bit.F && !prc_dev->last_rc_info.kb.bit.F) //turn on the fric regardless the situation
+        if (prc_dev->rc_info.kb.bit.F && !prc_dev->last_rc_info.kb.bit.F) //turn on the fric regardless the situation
         {
-          shoot_firction_toggle(pshoot,0); //assume that currently the fric is off
-          shoot_firction_toggle(pshoot2,0); //Leo assume that currently the fric is off
-	  			fric_on = 1; //set fric_on to be 0xFF i.e. on
+          shoot_firction_toggle(pshoot, 0); //assume that currently the fric is off
+          fric_on = 1;                      //set fric_on to be 0xFF i.e. on
         }
       }
-    
+
+      // TODO: read the power seperatelhy
       /*------ implement the function of a trigger ------*/
-      uint16_t * shooter_heat_ptr = shooter_heat_get_via_can();  // TODO: read the power seperatelhy from the referee system
-      uint16_t heatLimit = get_heat_limit();   // The heat limit for sentery 480
-
-      if (shooter_heat_ptr[0]< heatLimit && rc_device_get_state(prc_dev, RC_S2_DOWN) != RM_OK && fric_on) //not in disabled mode
+      uint16_t *shooter_heat_ptr = shooter_heat_get_via_can(); // TODO: read the power seperatelhy from the referee system
+      uint16_t heatLimit = get_heat_limit();                   // The heat limit for sentery 480
+      for (int i = 0;i < 2; i++)
       {
-        if (rc_device_get_state(prc_dev, RC_WHEEL_UP) == RM_OK || mouse_shoot_control(prc_dev)==press)
+        if (shooter_heat_ptr[0] < heatLimit && rc_device_get_state(prc_dev, RC_S2_DOWN) != RM_OK && fric_on) //not in disabled mode
         {
-          shoot_set_fric_speed(pshoot, FRIC_CON_SPEED, FRIC_CON_SPEED);
-          shoot_set_cmd(pshoot, SHOOT_CONTINUOUS_CMD, CONTIN_BULLET_NUM);				
-        }
-        else if ((rc_device_get_state(prc_dev, RC_WHEEL_DOWN) == RM_OK && prc_dev->last_rc_info.wheel > -300)
-              || mouse_shoot_control(prc_dev)==click)
-        {
-          shoot_set_fric_speed(pshoot, FRIC_MAX_SPEED, FRIC_MAX_SPEED);
-          shoot_set_cmd(pshoot, SHOOT_ONCE_CMD, 1);
-        }
-        else
-        {
-          shoot_set_fric_speed(pshoot, FRIC_MAX_SPEED, FRIC_MAX_SPEED);
-          shoot_set_cmd(pshoot, SHOOT_STOP_CMD, 0);
-        }
-      }
-
-      if (shooter_heat_ptr[0]< heatLimit && rc_device_get_state(prc_dev, RC_S2_DOWN) != RM_OK && fric_on) //not in disabled mode
-      {
-        if (rc_device_get_state(prc_dev, RC_WHEEL_UP) == RM_OK || mouse_shoot_control(prc_dev)==press)
-        {
-          shoot_set_fric_speed(pshoot2, FRIC_CON_SPEED, FRIC_CON_SPEED);
-          shoot_set_cmd(pshoot2, SHOOT_CONTINUOUS_CMD, CONTIN_BULLET_NUM);				
-        }
-        else if ((rc_device_get_state(prc_dev, RC_WHEEL_DOWN) == RM_OK && prc_dev->last_rc_info.wheel > -300)
-              || mouse_shoot_control(prc_dev)==click)
-        {
-          shoot_set_fric_speed(pshoot2, FRIC_MAX_SPEED, FRIC_MAX_SPEED);
-          shoot_set_cmd(pshoot2, SHOOT_ONCE_CMD, 1);
-        }
-        else
-        {
-          shoot_set_fric_speed(pshoot2, FRIC_MAX_SPEED, FRIC_MAX_SPEED);
-          shoot_set_cmd(pshoot2, SHOOT_STOP_CMD, 0);
+          if (rc_device_get_state(prc_dev, RC_WHEEL_UP) == RM_OK || mouse_shoot_control(prc_dev) == press)
+          {
+            shoot_set_fric_speed(pshoot, FRIC_CON_SPEED, i);
+            shoot_set_cmd(pshoot, SHOOT_CONTINUOUS_CMD, CONTIN_BULLET_NUM, i);
+          }
+          else if ((rc_device_get_state(prc_dev, RC_WHEEL_DOWN) == RM_OK && prc_dev->last_rc_info.wheel > -300) || mouse_shoot_control(prc_dev) == click)
+          {
+            shoot_set_fric_speed(pshoot, FRIC_MAX_SPEED,i);
+            shoot_set_cmd(pshoot, SHOOT_ONCE_CMD, 1,i);
+          }
+          else
+          {
+            shoot_set_fric_speed(pshoot, FRIC_MAX_SPEED,i);
+            shoot_set_cmd(pshoot, SHOOT_STOP_CMD, 0,i);
+          }
         }
       }
     }
 
-
-    if (rc_device_get_state(prc_dev, RC_S2_UP)== RM_OK){   //自动模式
+    if (rc_device_get_state(prc_dev, RC_S2_UP) == RM_OK)
+    { //自动模式
       shoot_event_update(&shoot_eve);
-      shoot_enable(pshoot2);
-      shoot_enable(pshoot); 
-      if (fric_on == 0){
+      shoot_enable(pshoot);
+      if (fric_on == 0)
+      {
         shoot_firction_toggle(pshoot, fric_on);
-        shoot_firction_toggle(pshoot2,fric_on);
         fric_on = 1;
       }
-      if (shoot1_flag){
-        shoot_set_fric_speed(pshoot, FRIC_CON_SPEED, FRIC_CON_SPEED);
-        shoot_set_cmd(pshoot, SHOOT_CONTINUOUS_CMD, CONTIN_BULLET_NUM);
+      if (shoot_flag)
+      {
+        shoot_set_fric_speed(pshoot, FRIC_CON_SPEED, 0);
+        shoot_set_fric_speed(pshoot, FRIC_CON_SPEED, 1);
+        shoot_set_cmd(pshoot, SHOOT_CONTINUOUS_CMD, CONTIN_BULLET_NUM,0);
+        shoot_set_cmd(pshoot, SHOOT_CONTINUOUS_CMD, CONTIN_BULLET_NUM,1);
       }
-      else{
-        shoot_set_cmd(pshoot, SHOOT_STOP_CMD, 0);
-      }
-      if (shoot2_flag){
-        shoot_set_fric_speed(pshoot2, FRIC_CON_SPEED, FRIC_CON_SPEED);
-        shoot_set_cmd(pshoot2, SHOOT_CONTINUOUS_CMD, CONTIN_BULLET_NUM);
-      } 
-      else{
-        shoot_set_cmd(pshoot2, SHOOT_STOP_CMD, 0);
+      else
+      {
+        shoot_set_cmd(pshoot, SHOOT_STOP_CMD, 0,0);
+        shoot_set_cmd(pshoot, SHOOT_STOP_CMD, 0,1);
       }
     }
 
     shoot_execute(pshoot);
-		shoot_execute(pshoot2);
-    osDelayUntil(&period,5);
+    osDelayUntil(&period, 5);
   }
 }
 
 /**Modified by Y.H. Liu
  * @Jun 13, 2019: to support the control by keyboards
  * @Jul 30, 2019: use strlen to determine whether the shooter is shoot2
- * 
+ * @Jan 13, 2020: modify the function so that the friction wheel will start together for both barrel
  * Switch on/off the friction wheel
  * @param toggled 0----not turned on yet, so turn the devices on
  *                1----turned on already, so turn off them now
@@ -203,15 +176,19 @@ int32_t shoot_firction_toggle(shoot_t pshoot, uint8_t toggled)
 {
   if (toggled)
   {
-    shoot_set_fric_speed(pshoot, FRIC_STOP_SPEED, FRIC_STOP_SPEED);
+    shoot_set_fric_speed(pshoot, FRIC_STOP_SPEED, 0);
+    shoot_set_fric_speed(pshoot, FRIC_STOP_SPEED, 1);
     turn_off_laser();
-		shoot_set_cmd(pshoot, SHOOT_STOP_CMD, 0);	
+    shoot_set_cmd(pshoot, SHOOT_STOP_CMD, 0, 0);
+    shoot_set_cmd(pshoot, SHOOT_STOP_CMD, 0, 1);
   }
   else
   {
-    shoot_set_fric_speed(pshoot, FRIC_MAX_SPEED, FRIC_MAX_SPEED);
+    shoot_set_fric_speed(pshoot, FRIC_MAX_SPEED, 0);
+    shoot_set_fric_speed(pshoot, FRIC_MAX_SPEED, 1);
     turn_on_laser();
-    shoot_set_cmd(pshoot, SHOOT_CONTINUOUS_CMD, CONTIN_BULLET_NUM);	    
+    shoot_set_cmd(pshoot, SHOOT_CONTINUOUS_CMD, CONTIN_BULLET_NUM, 0);
+    shoot_set_cmd(pshoot, SHOOT_CONTINUOUS_CMD, CONTIN_BULLET_NUM, 1);
   }
   return 0;
 }
@@ -246,20 +223,20 @@ mouse_cmd_e mouse_shoot_control(rc_device_t rc_dev)
   static int32_t pressed_count = 0;
   uint8_t lKey = rc_dev->rc_info.mouse.l;
 
-  if(lKey)
+  if (lKey)
   {
-    switch(ret_val)
+    switch (ret_val)
     {
-      case non:
-        ret_val = click;
-        pressed_count = 1;
-        break;
-      case click:
-        pressed_count += 1;
-        ret_val = pressed_count>CONTINUE_SHOOT_TH ? press : click;
-        break;
-      default:
-        break;
+    case non:
+      ret_val = click;
+      pressed_count = 1;
+      break;
+    case click:
+      pressed_count += 1;
+      ret_val = pressed_count > CONTINUE_SHOOT_TH ? press : click;
+      break;
+    default:
+      break;
     }
   }
   else
@@ -267,8 +244,8 @@ mouse_cmd_e mouse_shoot_control(rc_device_t rc_dev)
     pressed_count = 0;
     ret_val = non;
   }
-  return (pressed_count>=10 && ret_val==click) ? non : ret_val;
-} 
+  return (pressed_count >= 10 && ret_val == click) ? non : ret_val;
+}
 
 /**Addd by Y. H. Liu
  * @Jul 3, 2019: declare the function and create the defination framework
@@ -278,5 +255,5 @@ mouse_cmd_e mouse_shoot_control(rc_device_t rc_dev)
  */
 static uint16_t get_heat_limit(void)
 {
-  return 480u; 
+  return 480u;
 }

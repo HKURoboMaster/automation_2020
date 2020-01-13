@@ -122,7 +122,7 @@ void chassis_task(void const *argument)
   while (1){
     check_ir_signal(); // check ir signals
     update_chassis_event(&power_eve, &armor_eve);
-    float vx, vy, wz;
+    float vy;
 
     /**
     * Yemi 9 Jan

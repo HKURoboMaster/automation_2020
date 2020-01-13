@@ -23,6 +23,10 @@
 #else
 #define SHOOT_H_EXTERN extern
 #endif
+// Edited by Y.Z. Yang
+#define SHOOT_MOTOR_INDEX_L 0
+#define SHOOT_MOTOR_INDEX_R 1
+//
 
 #include "motor.h"
 #include "pid_controller.h"
@@ -69,7 +73,7 @@ struct shoot_param
 struct shoot_target
 {
   uint32_t shoot_num;
-  uint16_t fric_spd[2];
+  uint16_t fric_spd;
   float motor_speed;
 };
 
@@ -80,22 +84,27 @@ struct shoot
   struct object parent;
   struct shoot_param param;
 
-  enum shoot_state state;
+  enum shoot_state state [2];
 
-  uint8_t cmd;
+  uint8_t cmd [2];
 
-  uint8_t trigger_key;
-  float fric_spd[2];
+  uint8_t trigger_key [2];
+  float fric_spd [2][2];   // Contemporarily not used until the encoder is installed
 
-  uint32_t shoot_num;
-  uint32_t block_time;
 
-  struct shoot_target target;
+  uint32_t shoot_num [2];
+  uint32_t block_time [2];
 
-  struct motor_device motor;
-  struct pid motor_pid;
-  struct pid_feedback motor_feedback;
-  struct controller ctrl;
+  struct shoot_target target [2];
+  struct motor_device motor [2];
+
+  struct pid motor_pid [2];
+  struct pid_feedback motor_feedback [2];
+  struct controller ctrl [2];
+
+  struct pid fric_motor_pid [2];
+  struct pid_feedback fric_motor_feedback [2];
+  struct controller fric_ctrl [2];
 };
 
 typedef enum shoot_event_name {
@@ -109,14 +118,14 @@ typedef struct shoot_event{
   shoot_event_name_t shoot2_state;
 }shoot_event_t;
 
+
 shoot_t shoot_find(const char *name);
 int32_t shoot_pid_register(struct shoot *shoot, const char *name, enum device_can can);
-int32_t shoot_pid_register2(struct shoot *shoot, const char *name, enum device_can can);
 int32_t shoot_set_fric_speed(struct shoot *shoot, uint16_t fric_spd1, uint16_t fric_spd2);
-int32_t shoot_get_fric_speed(struct shoot *shoot, float *fric_spd1, float *fric_spd2);
-int32_t shoot_set_cmd(struct shoot *shoot, uint8_t cmd, uint32_t shoot_num);
+float* shoot_get_fric_speed(void);
+int32_t shoot_set_cmd(struct shoot *shoot, uint8_t cmd, uint32_t shoot_num , uint32_t index);
 int32_t shoot_execute(struct shoot *shoot);
-int32_t shoot_state_update(struct shoot *shoot);
+int32_t shoot_state_update(struct shoot *shoot, uint32_t index);
 int32_t shoot_enable(struct shoot *shoot);
 int32_t shoot_disable(struct shoot *shoot);
 int32_t shoot_set_turn_speed(struct shoot *shoot, uint16_t speed);
