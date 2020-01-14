@@ -25,14 +25,15 @@
 #include "chassis.h"
 #include "gimbal.h"
 #include "shoot.h"
+#include "plier.h"
 
 #include "chassis_task.h"
 #include "gimbal_task.h"
 #include "timer_task.h"
 #include "shoot_task.h"
+#include "plier_task.h"
 #include "communicate.h"
 #include "infantry_cmd.h"
-#include "tong_task.h"
 #include "init.h"
 
 #include "protocol.h"
@@ -45,7 +46,7 @@ struct chassis chassis;
 struct gimbal gimbal;
 struct shoot shoot;
 struct shoot shoot2;//Leo
-struct tong tong;//Huan
+struct plier plier;
 static struct rc_device rc_dev;
 
 static uint8_t glb_sys_cfg;
@@ -86,13 +87,15 @@ void hw_init(void)
   {
     rc_device_register(&rc_dev, "can_rc", 0);
     gimbal_cascade_register(&gimbal, "gimbal", DEVICE_CAN1);
-    tong_cascade_register(&tong, "tong", DEVICE_CAN1);
+    plier_cascade_register(&plier, "plier", DEVICE_CAN1);
+
     shoot_pid_register(&shoot, "shoot", DEVICE_CAN1);
 		shoot_pid_register2(&shoot2, "shoot2", DEVICE_CAN1);
     gimbal_yaw_disable(&gimbal);
     gimbal_pitch_disable(&gimbal);
     shoot_disable(&shoot);
 		shoot_disable(&shoot2);
+    plier_motor_disable(&plier);
   }
 
   offline_init();
@@ -104,6 +107,7 @@ osThreadId gimbal_task_t;
 osThreadId communicate_task_t;
 osThreadId cmd_task_t;
 osThreadId shoot_task_t;
+osThreadId plier_task_t;
 
 void task_init(void)
 {
@@ -131,5 +135,8 @@ void task_init(void)
 
     osThreadDef(SHOOT_TASK, shoot_task, osPriorityNormal, 0, 512);
     shoot_task_t = osThreadCreate(osThread(SHOOT_TASK), NULL);
+
+    osThreadDef(PLIER_TASK, plier_task, osPriorityNormal, 0, 512);
+    plier_task_t = osThreadCreate(osThread(PLIER_TASK), NULL);
   }
 }

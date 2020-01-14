@@ -261,16 +261,16 @@ static void get_motor_offset(motor_data_t ptr, uint8_t can_rx_data[])
 }
 
 
-void linear_actuator(enum linear_actuator_command cmd)
+void set_linear_actuator(enum linear_actuator_command cmd)
 {
   if (cmd == ON)
   {
-    HAL_GPIO_WritePin(GPIOI, GPIO_PIN_0, SET);
-    HAL_GPIO_WritePin(GPIOH, GPIO_PIN_12,RESET);
+    HAL_GPIO_WritePin(GPIOI, GPIO_PIN_0, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOH, GPIO_PIN_12,GPIO_PIN_RESET);
   }
   else
   {
-    HAL_GPIO_WritePin(GPIOI, GPIO_PIN_0, RESET);
-    HAL_GPIO_WritePin(GPIOH, GPIO_PIN_12,SET);
+    HAL_GPIO_WritePin(GPIOI, GPIO_PIN_0, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOH, GPIO_PIN_12,GPIO_PIN_SET);
   }
 }

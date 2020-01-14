@@ -84,7 +84,7 @@ struct motor_device
 enum linear_actuator_command
   {
     OFF = 0,
-    ON , 
+    ON ,
   };
 
 typedef int32_t (*fn_can_send)(enum device_can can, struct can_msg);
@@ -99,5 +99,6 @@ motor_data_t motor_device_get_data(motor_device_t motor_dev);
 int32_t motor_device_set_current(motor_device_t motor_dev, int16_t current);
 int32_t motor_device_data_update(enum device_can can, uint16_t can_id, uint8_t can_rx_data[]);                            
 int32_t motor_device_can_output(enum device_can m_can);
+void set_linear_actuator(enum linear_actuator_command cmd);
 
 #endif // __MOTOR_H__

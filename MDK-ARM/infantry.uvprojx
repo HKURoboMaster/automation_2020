@@ -427,6 +427,11 @@
               <FileType>1</FileType>
               <FilePath>..\application\referee_system.c</FilePath>
             </File>
+            <File>
+              <FileName>plier_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\plier_task.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -551,6 +556,11 @@
               <FileName>shoot.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\components\modules\shoot.c</FilePath>
+            </File>
+            <File>
+              <FileName>plier.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\components\modules\plier.c</FilePath>
             </File>
           </Files>
         </Group>

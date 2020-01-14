@@ -41,7 +41,7 @@ enum object_class_type
   Object_Class_Chassis = 3,
   Object_Class_Gimbal = 4,
   Object_Class_Shoot = 5,
-  Object_Class_Tong = 6,
+  Object_Class_Plier = 6,
   Object_Class_Raiser = 7,
   Object_Class_Unknown,
 };

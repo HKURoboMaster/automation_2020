@@ -46,6 +46,6 @@ void cali_param_init(void);
 cali_sys_t *get_cali_param(void);
 void cali_data_read(void);
 void save_cali_data(void);
-void gimbal_save_data(uint16_t pit_ecd, uint16_t yaw_ecd, uint16_t tong_ecd);
+void gimbal_save_data(uint16_t pit_ecd, uint16_t yaw_ecd);
 
 #endif // __PARAM_H__

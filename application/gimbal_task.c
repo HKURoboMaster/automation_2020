@@ -21,11 +21,12 @@
 #include "gimbal.h"
 #include "timer_task.h"
 #include "gimbal_task.h"
-#include "infantry_cmd.h"
+#include "ramp.h"
 #include "offline_check.h"
 #include "param.h"
 #include "ramp.h"
 #include "angle_queue.h"
+#include "infantry_cmd.h"
 
 #define DEFAULT_IMU_TEMP 50
 
@@ -260,6 +261,9 @@ void gimbal_task(void const *argument)
   if (prc_dev != NULL)
   {
     prc_info = rc_device_get_info(prc_dev);
+  }
+  else
+  {
   }
 
   soft_timer_register(imu_temp_keep, (void *)pgimbal, 5);

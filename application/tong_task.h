@@ -1,1 +1,0 @@
-#define TONG_OFFSET 0.0f
