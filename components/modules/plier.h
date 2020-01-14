@@ -42,7 +42,7 @@ struct plier
     struct cascade cascade;
     struct cascade_feedback cascade_fdb[2];
     struct controller ctrl;
-    float angle_speed; //degree per ms
+    float ecd_speed; //degree per ms
     float ecd_angle;
     float last_ecd_angle;
     float target_angle;

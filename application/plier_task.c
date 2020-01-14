@@ -123,7 +123,6 @@ void plier_task(void const *argument)
 
         plier_tim_ms = HAL_GetTick() - plier_last_tim;
         plier_last_tim = HAL_GetTick();
-        calc_ecd_angle_speed(pplier, plier_tim_ms);
 
         plier_execute(pplier);
         osDelayUntil(&period, 5);

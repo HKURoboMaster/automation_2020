@@ -24,7 +24,7 @@ int32_t plier_cascade_register(struct plier *plier, char *name, enum device_can 
     memcpy(&motor_name[i], name, name_len);
     plier->motor[i].can_periph = can;
     //--------------------------------
-    plier->motor[i].can_id = 0x205 + i; //// waiting for motor
+    plier->motor[i].can_id = 0x200 + i; //// waiting for motor
     //--------------------------------
   }
 
@@ -125,17 +125,6 @@ static int16_t plier_get_ecd_angle(int16_t raw_ecd, int16_t center_offset)
   return tmp;
 }
 
-int32_t calc_ecd_angle_speed(struct plier *plier, uint32_t time)
-{
-  if (plier == NULL)
-    return -RM_INVAL;
-
-  plier->angle_speed = (plier->ecd_angle - plier->last_ecd_angle) / time; //degree per ms
-  plier->last_ecd_angle = plier->ecd_angle;
-
-  return RM_OK;
-}
-
 int32_t plier_execute(struct plier *plier)
 {
   float motor_out;
@@ -153,6 +142,7 @@ int32_t plier_execute(struct plier *plier)
 
   pdata = motor_device_get_data(&(plier->motor[PLIER_MOTOR_INDEX_L]));
   plier->ecd_angle = PLIER_MOTOR_POSITIVE_DIR * plier_get_ecd_angle(pdata->ecd, plier->ecd_center) / ENCODER_ANGLE_RATIO;
+  plier->ecd_speed = PLIER_MOTOR_POSITIVE_DIR * pdata->speed_rpm;
   controller_execute(&(plier->ctrl), (void *)plier);
   controller_get_output(&(plier->ctrl), &motor_out);
   motor_device_set_current(&(plier->motor[PLIER_MOTOR_INDEX_L]), (int16_t)PLIER_MOTOR_POSITIVE_DIR * motor_out);
