@@ -89,7 +89,7 @@ void generate_patrol_movement(void)
     movement.start_time = HAL_GetTick();
     srand(movement.start_time);
     movement.duration = sduration.ceiling - sduration.floor;
-    movement.spd_ind = -movement.spd_ind;
+    movement.spd_ind = movement.spd_ind;
 }
 /**
  * Jerry 14 Jul

@@ -43,7 +43,7 @@ int left_ir_js = 0, right_ir_js = 0;  // for jscope
 
 //==========chassis speed & movement switch=============
 int chassis_speed_flag = MEDIUM_MODE;
-int chassis_movement_flag = PATROL_MOVEMENT_MODE;
+int chassis_movement_flag = RANDOM_MOVEMENT_MODE;
 //=======chassis movement logic global var========
 chassis_state_t state = {MEDIUM_MODE, MEDIUM_CONSTANT_SPEED}; //The state of chassis
 
@@ -72,7 +72,7 @@ int32_t power_pidout_js;
 int32_t power_js;
 uint8_t current_excess_flag_js;
 uint8_t sensor_offline = 0;
-int32_t chassis_manual_handle_debug_flag = 1;
+
 
 enum current_state_t
 {
