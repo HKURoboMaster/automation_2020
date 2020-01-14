@@ -45,9 +45,11 @@ static struct object_information object_container[Object_Info_Unknown] =
         {Object_Class_Controller, _OBJ_CONTAINER_LIST_INIT(Object_Info_Contoller)},
         /* initialize object container - Chassis */
         {Object_Class_Chassis, _OBJ_CONTAINER_LIST_INIT(Object_Info_Chassis)},
-        /* initialize object container - Controller */
+        /* initialize object container - Gimbal */
+        {Object_Class_Gimbal, _OBJ_CONTAINER_LIST_INIT(Object_Info_Gimbal)},
+        /* initialize object container - Shoot*/
         {Object_Class_Shoot, _OBJ_CONTAINER_LIST_INIT(Object_Info_Shoot)},
-        /* initialize object container - Controller */
+        /* initialize object container - Plier */
         {Object_Class_Plier, _OBJ_CONTAINER_LIST_INIT(Object_Info_Plier)},
         /* initialize object container - Raiser */
         {Object_Class_Raiser, _OBJ_CONTAINER_LIST_INIT(Object_Info_Raiser)},
