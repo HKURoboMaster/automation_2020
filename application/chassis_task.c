@@ -129,10 +129,10 @@ void chassis_task(void const *argument)
     * @brief Change manual handle method for debugging
     */
     if (rc_device_get_state(prc_dev, RC_S2_DOWN) != RM_OK){
-      if (rc_device_get_state(prc_dev, RC_S2_DOWN) == RM_OK){  //Manual mode
+      if (rc_device_get_state(prc_dev, RC_S2_MID) == RM_OK){  //Manual mode
         vy = -(float)prc_info->ch3 / 660 * MAX_CHASSIS_VY_SPEED;
       }
-      else if (rc_device_get_state(prc_dev, RC_S2_DOWN) == RM_OK) { // Autonomous mode
+      else if (rc_device_get_state(prc_dev, RC_S2_UP) == RM_OK) { // Autonomous mode
         switch (chassis_speed_flag)
         {
           case LOW_MODE:
