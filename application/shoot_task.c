@@ -131,6 +131,8 @@ void shoot_task(void const *argument)
     uint16_t * shooter_heat_ptr = shooter_heat_get_via_can();
     uint16_t heatLimit = get_heat_limit();
 
+    // uint16_t shoot_speed = get_shoot_speed(); to be finished    
+
     #ifndef HERO_ROBOT
     if (shooter_heat_ptr[0]< heatLimit-55 && rc_device_get_state(prc_dev, RC_S2_DOWN) != RM_OK && fric_on) //not in disabled mode
     {
@@ -278,13 +280,16 @@ static uint16_t get_heat_limit(void)
 {
   uint8_t robot_level = get_robot_level(); 
   uint16_t limit = 4096;
-  if(robot_level<=4)
+  if(robot_level<4)
   {
     #ifndef HERO_ROBOT
-    limit = robot_level * 120 + 120;
+    limit = robot_level * 60 + 120;
     #else
     limit = robotLevel * 100 + 100;
     #endif
   }
   return limit; 
 }
+
+// static uint16_t get_shoot_speed(void)   to be finished
+//{}
