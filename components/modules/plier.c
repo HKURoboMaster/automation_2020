@@ -5,6 +5,11 @@ float ecd_angle_js;
 float last_ecd_angle_js;
 float target_angle_js;
 float ecd_center_js;
+float motor_out_js;
+float cascade_outer_fdb_js;
+float cascade_inter_fdb_js;
+float controller_input_js;
+float controller_output_js;
 
 int32_t plier_cascade_register(struct plier *plier, char *name, enum device_can can)
 {
@@ -49,7 +54,7 @@ int32_t plier_cascade_register(struct plier *plier, char *name, enum device_can 
   pid_struct_init(&(plier->cascade.outer), 500, 600, 15, 0, 0);     // test 1
   pid_struct_init(&(plier->cascade.inter), 30000, 3000, 240, 0, 0); // test 1
 
-  err = cascade_controller_register(&(plier->ctrl), motor_name[0],
+  err = cascade_controller_register(&(plier->ctrl), motor_name[PLIER_MOTOR_INDEX_L],
                                     &(plier->cascade),
                                     &(plier->cascade_fdb), 1);
   if (err != RM_OK)
@@ -103,6 +108,8 @@ static int32_t plier_ecd_input_convert(struct controller *ctrl, void *input)
   plier_t data = (plier_t)input;
   cascade_fdb->outer_fdb = data->ecd_angle;
   cascade_fdb->inter_fdb = data->ecd_speed;
+  cascade_outer_fdb_js = cascade_fdb->outer_fdb; //test 1
+  cascade_inter_fdb_js = cascade_fdb->inter_fdb;
   return RM_OK;
 }
 
@@ -167,6 +174,10 @@ int32_t plier_execute(struct plier *plier)
   ecd_angle_js = plier->ecd_angle;
   target_angle_js = plier->target_angle;
   ecd_center_js = plier->ecd_center;
+  motor_out_js = motor_out;
+  controller_input_js = plier->ctrl.input;
+  controller_output_js = plier->ctrl.output;
+
 
   return RM_OK;
 }

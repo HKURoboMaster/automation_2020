@@ -19,12 +19,8 @@
 #define ENCODER_ANGLE_RATIO (8192.0f / 360.0f)
 #endif
 
-enum motor_name
-{
-    PLIER_MOTOR_INDEX_L = 0,
-    PLIER_MOTOR_INDEX_R,
-    PLIER_MOTOR_NUMBER,
-};
+#define PLIER_MOTOR_INDEX_L 0
+#define PLIER_MOTOR_INDEX_R 1
 
 enum step
 {
@@ -39,7 +35,6 @@ enum step
 struct plier
 {
     struct object parent;
-    enum motor_name motor_name;
     struct motor_device motor[2];
     struct cascade cascade;
     struct cascade_feedback cascade_fdb;
