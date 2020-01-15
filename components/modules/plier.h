@@ -15,7 +15,9 @@
 #define PLIER_ANGLE_MIN 0.0f         /////  waiting for adjusting
 #define PLIER_MOTOR_POSITIVE_DIR 1.0 ///// motor direction
 
-#define CALIED_FLAG 0x55
+#ifndef ENCODER_ANGLE_RATIO
+#define ENCODER_ANGLE_RATIO (8192.0f / 360.0f)
+#endif
 
 enum motor_name
 {
@@ -40,7 +42,7 @@ struct plier
     enum motor_name motor_name;
     struct motor_device motor[2];
     struct cascade cascade;
-    struct cascade_feedback cascade_fdb[2];
+    struct cascade_feedback cascade_fdb;
     struct controller ctrl;
     float ecd_speed; //rpm
     float ecd_angle;

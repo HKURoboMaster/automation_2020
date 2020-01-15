@@ -27,7 +27,7 @@ void plier_task(void const *argument)
     pplier = plier_find("plier");
     prc_dev = rc_device_find("can_rc");
     plier_set_offset(pplier, PLIER_OFFSET);
-    plier_set_angle(pplier, pplier->ecd_center);
+    plier_set_angle(pplier, pplier->ecd_center); //Test 1
 
     if (prc_dev != NULL)
     {
@@ -48,7 +48,8 @@ void plier_task(void const *argument)
 
         if (rc_device_get_state(prc_dev, RC_S2_UP) == RM_OK || rc_device_get_state(prc_dev, RC_S2_MID) == RM_OK || rc_device_get_state(prc_dev, RC_S2_MID2UP) == RM_OK || rc_device_get_state(prc_dev, RC_S2_UP2MID == RM_OK) == RM_OK) //catch dump throw condition
         {
-            if (prc_info->kb.bit.G) //catch dump throw condition
+            //if (prc_info->kb.bit.G) //catch dump throw condition
+            if (1) // test 1
             {
                 if (pplier->step == STEP_1)
                 {
@@ -62,7 +63,7 @@ void plier_task(void const *argument)
                 {
                     plier_set_angle(pplier, pplier->ecd_center + 90.0f);
                     //laser aim
-                    if (0) //aimed
+                    if (1) //aimed // test 1
                         pplier->step = STEP_3;
                 }
 
