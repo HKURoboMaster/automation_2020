@@ -51,8 +51,8 @@ int32_t plier_cascade_register(struct plier *plier, char *name, enum device_can 
 
   //Only control the left motor using cascade pid.
   plier->ctrl.convert_feedback = plier_ecd_input_convert;
-  pid_struct_init(&(plier->cascade.outer), 500, 600, 15, 0, 0);     // test 1
-  pid_struct_init(&(plier->cascade.inter), 30000, 3000, 240, 0, 0); // test 1
+  pid_struct_init(&(plier->cascade.outer), 500, 600, 0, 0, 0);     // test 1
+  pid_struct_init(&(plier->cascade.inter), 3000, 300, 0, 0, 0); // test 1
 
   err = cascade_controller_register(&(plier->ctrl), motor_name[PLIER_MOTOR_INDEX_L],
                                     &(plier->cascade),
