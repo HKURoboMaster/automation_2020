@@ -158,10 +158,10 @@ int32_t plier_execute(struct plier *plier)
   plier->ecd_speed = PLIER_MOTOR_POSITIVE_DIR * pdata->speed_rpm;
   controller_execute(&(plier->ctrl), (void *)plier);
   controller_get_output(&(plier->ctrl), &motor_out);
-  motor_device_set_current(&(plier->motor[PLIER_MOTOR_INDEX_L]), (int16_t)PLIER_MOTOR_POSITIVE_DIR * 3000); //motor_out //test 1
+  motor_device_set_current(&(plier->motor[PLIER_MOTOR_INDEX_L]), (int16_t)PLIER_MOTOR_POSITIVE_DIR * motor_out); //motor_out //test 1
 
   //pdata = motor_device_get_data(&(plier->motor[PLIER_MOTOR_INDEX_R]));
-  motor_device_set_current(&(plier->motor[PLIER_MOTOR_INDEX_R]), -(int16_t)PLIER_MOTOR_POSITIVE_DIR * 3000); // test 1
+  motor_device_set_current(&(plier->motor[PLIER_MOTOR_INDEX_R]), -(int16_t)PLIER_MOTOR_POSITIVE_DIR * motor_out); // test 1
 
   ecd_speed_js = plier->ecd_speed; //test 1
   ecd_angle_js = plier->ecd_angle;

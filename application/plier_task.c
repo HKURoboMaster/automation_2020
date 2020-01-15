@@ -46,7 +46,7 @@ void plier_task(void const *argument)
             plier_motor_enable(pplier);
         }
 
-        if (rc_device_get_state(prc_dev, RC_S2_UP) == RM_OK || rc_device_get_state(prc_dev, RC_S2_MID) == RM_OK || rc_device_get_state(prc_dev, RC_S2_MID2UP) == RM_OK || rc_device_get_state(prc_dev, RC_S2_UP2MID == RM_OK) == RM_OK) //catch dump throw condition
+        if (rc_device_get_state(prc_dev, RC_S2_UP) == RM_OK || rc_device_get_state(prc_dev, RC_S2_MID) == RM_OK || rc_device_get_state(prc_dev, RC_S2_MID2UP) == RM_OK || rc_device_get_state(prc_dev, RC_S2_UP2MID) == RM_OK) //catch dump throw condition
         {
             //if (prc_info->kb.bit.G) //catch dump throw condition
             if (1) // test 1
@@ -56,7 +56,10 @@ void plier_task(void const *argument)
                     plier_set_angle(pplier, pplier->ecd_center + 90.0f);
 
                     if (fabs(pplier->ecd_angle - pplier->target_angle) <= 5.0f)
+                    {
+                        HAL_Delay(1000); //test 1
                         pplier->step = STEP_2;
+                    }
                 }
 
                 else if (pplier->step == STEP_2)
@@ -64,7 +67,11 @@ void plier_task(void const *argument)
                     plier_set_angle(pplier, pplier->ecd_center + 90.0f);
                     //laser aim
                     if (1) //aimed // test 1
+                    {
+                        HAL_Delay(1000); //test 1
                         pplier->step = STEP_3;
+                    }
+                        
                 }
 
                 else if (pplier->step == STEP_3)
@@ -97,7 +104,11 @@ void plier_task(void const *argument)
                         set_linear_actuator(OFF);
 
                     if (fabs(pplier->ecd_angle - pplier->target_angle) < 5.0f)
-                        pplier->step = STEP_6;
+                        {
+                            HAL_Delay(1000); //test 1
+                            pplier->step = STEP_6;
+                        }
+                        
                 }
 
                 else if (pplier->step == STEP_6)
@@ -105,7 +116,11 @@ void plier_task(void const *argument)
                     plier_set_angle(pplier, pplier->ecd_center);
 
                     if (fabs(pplier->ecd_angle - pplier->target_angle) < 5.0f)
+                    {
+                        HAL_Delay(1000); //test 1
                         pplier->step = STEP_1;
+                    }
+                        
                 }
             }
 
