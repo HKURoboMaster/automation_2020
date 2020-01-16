@@ -14,6 +14,7 @@
 uint32_t plier_tim_ms = 0;
 uint32_t plier_last_tim = 0;
 uint8_t plier_auto_init_f = 0;
+int8_t rc_js;
 
 static ramp_t plier_ramp = RAMP_GEN_DAFAULT;
 
@@ -41,7 +42,8 @@ void plier_task(void const *argument)
 
     while (1)
     {
-        if (rc_device_get_state(prc_dev, RC_S2_DOWN2MID) == RM_OK) //enable condition
+        rc_js = rc_device_get_state(prc_dev, RC_S2_UP);
+        if (rc_device_get_state(prc_dev, RC_S2_UP) == RM_OK) //enable condition
         {
             plier_motor_enable(pplier);
         }
