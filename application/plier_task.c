@@ -14,11 +14,11 @@
 uint32_t plier_tim_ms = 0;
 uint32_t plier_last_tim = 0;
 uint8_t plier_auto_init_f = 0;
-int8_t rc_js;
+int8_t rc_js; //test 1
 
 ramp_t plier_ramp = RAMP_GEN_DAFAULT;
 
-int16_t i = 0; //test 1
+//int16_t i = 0; //test 1
 
 void plier_task(void const *argument)
 {
@@ -41,13 +41,16 @@ void plier_task(void const *argument)
 
     while (1)
     {
-        rc_js = rc_device_get_state(prc_dev, RC_S2_UP);
+        rc_js = rc_device_get_state(prc_dev, RC_S2_UP); //test 1
         if (rc_device_get_state(prc_dev, RC_S2_UP) == RM_OK) //enable condition
+        {
+            plier_motor_enable(pplier);
+        }
+
+        if (rc_device_get_state(prc_dev, RC_S2_DOWN) == RM_OK) //disable condition
         {
             plier_motor_disable(pplier);
         }
-
-        plier_motor_enable(pplier);
 
         if (rc_device_get_state(prc_dev, RC_S2_UP) == RM_OK || rc_device_get_state(prc_dev, RC_S2_MID) == RM_OK || rc_device_get_state(prc_dev, RC_S2_MID2UP) == RM_OK || rc_device_get_state(prc_dev, RC_S2_UP2MID) == RM_OK) //catch dump throw condition //test 1
         {
