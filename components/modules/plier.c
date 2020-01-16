@@ -10,6 +10,9 @@ float cascade_outer_fdb_js;
 float cascade_inter_fdb_js;
 float controller_input_js;
 float controller_output_js;
+float cascade_inter_out_js;
+float cascade_outer_out_js;
+int8_t err_js;
 
 int32_t plier_cascade_register(struct plier *plier, char *name, enum device_can can)
 {
@@ -57,6 +60,7 @@ int32_t plier_cascade_register(struct plier *plier, char *name, enum device_can 
   err = cascade_controller_register(&(plier->ctrl), motor_name[PLIER_MOTOR_INDEX_L],
                                     &(plier->cascade),
                                     &(plier->cascade_fdb), 1);
+  err_js = err;
   if (err != RM_OK)
     goto end;
 
@@ -177,6 +181,8 @@ int32_t plier_execute(struct plier *plier)
   motor_out_js = motor_out;
   controller_input_js = plier->ctrl.input;
   controller_output_js = plier->ctrl.output;
+  cascade_inter_out_js = plier->cascade.inter.out;
+  cascade_outer_out_js = plier->cascade.outer.out;
 
 
   return RM_OK;
