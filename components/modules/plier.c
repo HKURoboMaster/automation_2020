@@ -1,4 +1,5 @@
 #include "plier.h"
+#include "ramp.h"
 
 float ecd_speed_js; //test 1
 float ecd_angle_js;
@@ -13,8 +14,10 @@ float controller_output_js;
 float cascade_inter_out_js;
 float cascade_outer_out_js;
 int8_t err_js;
+int8_t controller_ex_js;
 
-int32_t plier_cascade_register(struct plier *plier, char *name, enum device_can can)
+
+int32_t plier_cascade_register(struct plier *plier, const char *name, enum device_can can)
 {
   char motor_name[2][OBJECT_NAME_MAX_LEN] = {0};
   uint8_t name_len;
@@ -54,8 +57,8 @@ int32_t plier_cascade_register(struct plier *plier, char *name, enum device_can 
 
   //Only control the left motor using cascade pid.
   plier->ctrl.convert_feedback = plier_ecd_input_convert;
-  pid_struct_init(&(plier->cascade.outer), 500, 600, 15, 0, 0);     // test 1
-  pid_struct_init(&(plier->cascade.inter), 3000, 300, 24, 0, 0); // test 1
+  pid_struct_init(&(plier->cascade.outer), 50, 40, 1, 0, 0);     // test 1
+  pid_struct_init(&(plier->cascade.inter), 1000, 150, 7.5, 0, 0); // test 1
 
   err = cascade_controller_register(&(plier->ctrl), motor_name[PLIER_MOTOR_INDEX_L],
                                     &(plier->cascade),
@@ -121,12 +124,16 @@ int32_t plier_set_angle(struct plier *plier, float plier_angle)
 {
   if (plier == NULL)
     return -RM_INVAL;
+  
+  extern ramp_t plier_ramp;
+  float target_angle;
+  target_angle=plier_angle;// * (1 - ramp_calculate(&plier_ramp));
 
-  VAL_LIMIT(plier_angle, PLIER_ANGLE_MIN, PLIER_ANGLE_MAX);
-  plier->target_angle = plier_angle;
+  VAL_LIMIT(target_angle, PLIER_ANGLE_MIN, PLIER_ANGLE_MAX);
+  plier->target_angle = target_angle;
   target_angle_js = plier->target_angle; //Test 1
 
-  return -RM_OK;
+  return RM_OK;
 }
 
 static int16_t plier_get_ecd_angle(int16_t raw_ecd, int16_t center_offset)
@@ -167,7 +174,7 @@ int32_t plier_execute(struct plier *plier)
   pdata = motor_device_get_data(&(plier->motor[PLIER_MOTOR_INDEX_L]));
   plier->ecd_angle = PLIER_MOTOR_POSITIVE_DIR * plier_get_ecd_angle(pdata->ecd, plier->ecd_center) / ENCODER_ANGLE_RATIO;
   plier->ecd_speed = PLIER_MOTOR_POSITIVE_DIR * pdata->speed_rpm;
-  controller_execute(&(plier->ctrl), (void *)plier);
+  controller_ex_js = controller_execute(&(plier->ctrl), (void *)plier);
   controller_get_output(&(plier->ctrl), &motor_out);
   motor_device_set_current(&(plier->motor[PLIER_MOTOR_INDEX_L]), (int16_t)PLIER_MOTOR_POSITIVE_DIR * motor_out); //motor_out //test 1
 

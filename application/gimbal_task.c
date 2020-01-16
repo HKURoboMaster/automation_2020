@@ -24,7 +24,6 @@
 #include "ramp.h"
 #include "offline_check.h"
 #include "param.h"
-#include "ramp.h"
 #include "angle_queue.h"
 #include "infantry_cmd.h"
 

@@ -1,5 +1,4 @@
 
-#include <math.h>
 #include "can.h"
 #include "board.h"
 #include "sys.h"
@@ -10,12 +9,15 @@
 #include "ramp.h"
 #include "offline_check.h"
 #include "motor.h"
+#include "infantry_cmd.h"
 
 uint32_t plier_tim_ms = 0;
 uint32_t plier_last_tim = 0;
 uint8_t plier_auto_init_f = 0;
 
-static ramp_t plier_ramp = RAMP_GEN_DAFAULT;
+ramp_t plier_ramp = RAMP_GEN_DAFAULT;
+
+int16_t i = 0; //test 1
 
 void plier_task(void const *argument)
 {
@@ -29,10 +31,7 @@ void plier_task(void const *argument)
     plier_set_offset(pplier, PLIER_OFFSET);
     plier_set_angle(pplier, pplier->ecd_center); //Test 1
 
-    if (prc_dev != NULL)
-    {
-        prc_info = rc_device_get_info(prc_dev);
-    }
+    prc_info = rc_device_get_info(prc_dev);
 
     pplier->step = STEP_1;
 
@@ -41,23 +40,25 @@ void plier_task(void const *argument)
 
     while (1)
     {
-        if (rc_device_get_state(prc_dev, RC_S2_DOWN2MID) == RM_OK) //enable condition
+        if (rc_device_get_state(prc_dev, RC_S2_DOWN) == RM_OK) //disable condition //test 1
         {
-            plier_motor_enable(pplier);
+            plier_motor_disable(pplier);
         }
 
-        if (rc_device_get_state(prc_dev, RC_S2_UP) == RM_OK || rc_device_get_state(prc_dev, RC_S2_MID) == RM_OK || rc_device_get_state(prc_dev, RC_S2_MID2UP) == RM_OK || rc_device_get_state(prc_dev, RC_S2_UP2MID) == RM_OK) //catch dump throw condition
+        plier_motor_enable(pplier);
+
+        //if (rc_device_get_state(prc_dev, RC_S2_UP) == RM_OK || rc_device_get_state(prc_dev, RC_S2_MID) == RM_OK || rc_device_get_state(prc_dev, RC_S2_MID2UP) == RM_OK || rc_device_get_state(prc_dev, RC_S2_UP2MID) == RM_OK) //catch dump throw condition //test 1
         {
             //if (prc_info->kb.bit.G) //catch dump throw condition
             if (1) // test 1
-            {
+            {//
                 if (pplier->step == STEP_1)
                 {
                     plier_set_angle(pplier, pplier->ecd_center + 90.0f);
 
                     if (fabs(pplier->ecd_angle - pplier->target_angle) <= 5.0f)
                     {
-                        HAL_Delay(1000); //test 1
+                        HAL_Delay(5000); //test 1
                         pplier->step = STEP_2;
                     }
                 }
@@ -68,10 +69,9 @@ void plier_task(void const *argument)
                     //laser aim
                     if (1) //aimed // test 1
                     {
-                        HAL_Delay(1000); //test 1
+                        HAL_Delay(5000); //test 1
                         pplier->step = STEP_3;
                     }
-                        
                 }
 
                 else if (pplier->step == STEP_3)
@@ -80,7 +80,7 @@ void plier_task(void const *argument)
                     if (fabs(pplier->ecd_angle - pplier->target_angle) <= 5.0f)
                     {
                         set_linear_actuator(ON);
-                        HAL_Delay(1000); //debug
+                        HAL_Delay(5000); //debug
                         pplier->step = STEP_4;
                     }
                 }
@@ -91,7 +91,7 @@ void plier_task(void const *argument)
 
                     if (fabs(pplier->ecd_angle - pplier->target_angle) <= 5.0f)
                     {
-                        HAL_Delay(1000); //debug
+                        HAL_Delay(5000); //debug
                         pplier->step = STEP_5;
                     }
                 }
@@ -104,11 +104,10 @@ void plier_task(void const *argument)
                         set_linear_actuator(OFF);
 
                     if (fabs(pplier->ecd_angle - pplier->target_angle) < 5.0f)
-                        {
-                            HAL_Delay(1000); //test 1
-                            pplier->step = STEP_6;
-                        }
-                        
+                    {
+                        HAL_Delay(5000); //test 1
+                        pplier->step = STEP_6;
+                    }
                 }
 
                 else if (pplier->step == STEP_6)
@@ -117,12 +116,28 @@ void plier_task(void const *argument)
 
                     if (fabs(pplier->ecd_angle - pplier->target_angle) < 5.0f)
                     {
-                        HAL_Delay(1000); //test 1
+                        HAL_Delay(5000); //test 1
                         pplier->step = STEP_1;
                     }
-                        
-                }
+                }//
             }
+
+            /*HAL_Delay(5000);
+            if (i = 0)
+            {
+                plier_set_angle(pplier, pplier->ecd_center);
+                i = 1;
+            }
+            else if (i = 1)
+            {
+                plier_set_angle(pplier, pplier->ecd_center + 90.0f);
+                i = 2;
+            }
+            else if (i = 2)
+            {
+                plier_set_angle(pplier, pplier->ecd_center + 180.0f);
+                i = 0;
+            }*/
 
             if (prc_info->kb.bit.F)
             {
@@ -130,11 +145,6 @@ void plier_task(void const *argument)
                 plier_set_angle(pplier, pplier->ecd_center);
                 pplier->step = STEP_1;
             }
-        }
-
-        if (rc_device_get_state(prc_dev, RC_S2_DOWN) == RM_OK) //disable condition
-        {
-            plier_motor_disable(pplier);
         }
 
         plier_tim_ms = HAL_GetTick() - plier_last_tim;
