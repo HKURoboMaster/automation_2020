@@ -8,8 +8,8 @@
 #define PLIER_TASK_H_EXTERN extern
 #endif
 
-#define PLIER_PERIOD 2
-#define BACK_CENTER_TIME 3000
+#define PLIER_PERIOD 5
+#define BACK_CENTER_TIME 10000
 #define PLIER_OFFSET 0.0f
 
 void plier_task(void const *argument);

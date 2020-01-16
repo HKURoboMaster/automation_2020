@@ -49,7 +49,7 @@ struct plier
 
 typedef struct plier *plier_t;
 
-int32_t plier_cascade_register(struct plier *plier, char *name, enum device_can can);
+int32_t plier_cascade_register(struct plier *plier, const char *name, enum device_can can);
 int32_t plier_set_offset(struct plier *plier, float ecd_angle);
 int32_t plier_motor_enable(struct plier *plier);
 int32_t plier_motor_disable(struct plier *plier);
