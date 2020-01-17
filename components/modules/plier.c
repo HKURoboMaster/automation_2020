@@ -15,6 +15,7 @@ float cascade_inter_out_js;
 float cascade_outer_out_js;
 int8_t err_js;
 int8_t controller_ex_js;
+int16_t center_offset_js;
 
 
 int32_t plier_cascade_register(struct plier *plier, const char *name, enum device_can can)
@@ -58,7 +59,7 @@ int32_t plier_cascade_register(struct plier *plier, const char *name, enum devic
   //Only control the left motor using cascade pid.
   plier->ctrl.convert_feedback = plier_ecd_input_convert;
   pid_struct_init(&(plier->cascade.outer), 50, 40, 1, 0, 0);     // test 1
-  pid_struct_init(&(plier->cascade.inter), 1000, 150, 7.5, 0, 0); // test 1
+  pid_struct_init(&(plier->cascade.inter), 800, 150, 7.5, 0, 0); // test 1
 
   err = cascade_controller_register(&(plier->ctrl), motor_name[PLIER_MOTOR_INDEX_L],
                                     &(plier->cascade),
@@ -135,7 +136,7 @@ int32_t plier_set_angle(struct plier *plier, float plier_angle)
 
   return RM_OK;
 }
-
+// Error
 static int16_t plier_get_ecd_angle(int16_t raw_ecd, int16_t center_offset)
 {
   int16_t tmp = 0;
@@ -190,6 +191,8 @@ int32_t plier_execute(struct plier *plier)
   controller_output_js = plier->ctrl.output;
   cascade_inter_out_js = plier->cascade.inter.out;
   cascade_outer_out_js = plier->cascade.outer.out;
+  center_offset_js = plier->ecd_center;
+
 
 
   return RM_OK;

@@ -44,10 +44,10 @@ void plier_task(void const *argument)
         rc_js = rc_device_get_state(prc_dev, RC_S2_UP);
         if (rc_device_get_state(prc_dev, RC_S2_UP) == RM_OK) //enable condition
         {
-            plier_motor_disable(pplier);
+            plier_motor_enable(pplier);
         }
-
-        plier_motor_enable(pplier);
+        if  (rc_device_get_state(prc_dev, RC_S2_DOWN) == RM_OK)
+            plier_motor_disable(pplier);
 
         if (rc_device_get_state(prc_dev, RC_S2_UP) == RM_OK || rc_device_get_state(prc_dev, RC_S2_MID) == RM_OK || rc_device_get_state(prc_dev, RC_S2_MID2UP) == RM_OK || rc_device_get_state(prc_dev, RC_S2_UP2MID) == RM_OK) //catch dump throw condition //test 1
         {
@@ -60,7 +60,7 @@ void plier_task(void const *argument)
 
                     if (fabs(pplier->ecd_angle - pplier->target_angle) <= 5.0f)
                     {
-                        HAL_Delay(5000); //test 1
+                        HAL_Delay(1000); //test 1
                         pplier->step = STEP_2;
                     }
                 }
@@ -71,7 +71,7 @@ void plier_task(void const *argument)
                     //laser aim
                     if (1) //aimed // test 1
                     {
-                        HAL_Delay(5000); //test 1
+                        HAL_Delay(1000); //test 1
                         pplier->step = STEP_3;
                     }
                 }
@@ -82,7 +82,7 @@ void plier_task(void const *argument)
                     if (fabs(pplier->ecd_angle - pplier->target_angle) <= 5.0f)
                     {
                         set_linear_actuator(ON);
-                        HAL_Delay(5000); //debug
+                        HAL_Delay(1000); //debug
                         pplier->step = STEP_4;
                     }
                 }
@@ -93,7 +93,7 @@ void plier_task(void const *argument)
 
                     if (fabs(pplier->ecd_angle - pplier->target_angle) <= 5.0f)
                     {
-                        HAL_Delay(5000); //debug
+                        HAL_Delay(1000); //debug
                         pplier->step = STEP_5;
                     }
                 }
@@ -107,7 +107,7 @@ void plier_task(void const *argument)
 
                     if (fabs(pplier->ecd_angle - pplier->target_angle) < 5.0f)
                     {
-                        HAL_Delay(5000); //test 1
+                        HAL_Delay(1000); //test 1
                         pplier->step = STEP_6;
                     }
                 }
@@ -118,13 +118,13 @@ void plier_task(void const *argument)
 
                     if (fabs(pplier->ecd_angle - pplier->target_angle) < 5.0f)
                     {
-                        HAL_Delay(5000); //test 1
+                        HAL_Delay(1000); //test 1
                         pplier->step = STEP_1;
                     }
                 }//
             }
 
-            /*HAL_Delay(5000);
+            /*HAL_Delay(1000);
             if (i = 0)
             {
                 plier_set_angle(pplier, pplier->ecd_center);
