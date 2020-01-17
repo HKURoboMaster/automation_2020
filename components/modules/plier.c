@@ -59,8 +59,8 @@ int32_t plier_cascade_register(struct plier *plier, const char *name, enum devic
   //Only control the left motor using cascade pid.
   plier->ctrl.convert_feedback = plier_ecd_input_convert;
   pid_struct_init(&(plier->cascade.outer), 50, 40, 1, 0, 0);     // test 1
-  pid_struct_init(&(plier->cascade.inter), 800, 150, 7.5, 0, 0); // test 1
-
+  pid_struct_init(&(plier->cascade.inter), 800, 150, 20, 0, 0); // test 1
+  plier->step = STEP_1;
   err = cascade_controller_register(&(plier->ctrl), motor_name[PLIER_MOTOR_INDEX_L],
                                     &(plier->cascade),
                                     &(plier->cascade_fdb), 1);
@@ -126,7 +126,6 @@ int32_t plier_set_angle(struct plier *plier, float plier_angle)
   if (plier == NULL)
     return -RM_INVAL;
   
-  extern ramp_t plier_ramp;
   float target_angle;
   target_angle=plier_angle;// * (1 - ramp_calculate(&plier_ramp));
 
@@ -157,14 +156,16 @@ static int16_t plier_get_ecd_angle(int16_t raw_ecd, int16_t center_offset)
   return tmp;
 }
 
-float plier_ramp(target_angle, ecd_angle)
+float plier_ramp(float angle, float ecd)
 {
-  if (target_angle >= ecd_angle + 2 * PLIER_RAMP_CO)
-    return ecd_angle + PLIER_RAMP_CO;
-  else if (target_angle <= ecd_angle - 2 * PLIER_RAMP_CO)
-    return ecd_angle - PLIER_RAMP_CO;
-  return target_angle;
+  if (angle >= ecd + 2 * PLIER_RAMP_CO)
+    return ecd + PLIER_RAMP_CO;
+  else if (angle <= ecd - 2 * PLIER_RAMP_CO)
+    return ecd - PLIER_RAMP_CO;
+  return angle;
 }
+
+
 
 int32_t plier_execute(struct plier *plier)
 {
@@ -206,3 +207,6 @@ int32_t plier_execute(struct plier *plier)
 
   return RM_OK;
 }
+
+
+
