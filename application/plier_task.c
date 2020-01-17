@@ -16,8 +16,6 @@ uint32_t plier_last_tim = 0;
 uint8_t plier_auto_init_f = 0;
 int8_t rc_js; //test 1
 
-ramp_t plier_ramp = RAMP_GEN_DAFAULT;
-
 //int16_t i = 0; //test 1
 
 void plier_task(void const *argument)
@@ -26,6 +24,7 @@ void plier_task(void const *argument)
     rc_device_t prc_dev = NULL;
     rc_info_t prc_info = NULL;
     plier_t pplier = NULL;
+    float ecd_ramp_angle;
 
     pplier = plier_find("plier");
     prc_dev = rc_device_find("can_rc");
@@ -46,17 +45,10 @@ void plier_task(void const *argument)
         {
             plier_motor_enable(pplier);
         }
-<<<<<<< HEAD
-        if  (rc_device_get_state(prc_dev, RC_S2_DOWN) == RM_OK)
-            plier_motor_disable(pplier);
-=======
-
-        if (rc_device_get_state(prc_dev, RC_S2_DOWN) == RM_OK) //disable condition
+        if  (rc_device_get_state(prc_dev, RC_S2_MID) == RM_OK)
         {
             plier_motor_disable(pplier);
         }
->>>>>>> d59f337868309e0d18e35773618263a9b0dc27b3
-
         if (rc_device_get_state(prc_dev, RC_S2_UP) == RM_OK || rc_device_get_state(prc_dev, RC_S2_MID) == RM_OK || rc_device_get_state(prc_dev, RC_S2_MID2UP) == RM_OK || rc_device_get_state(prc_dev, RC_S2_UP2MID) == RM_OK) //catch dump throw condition //test 1
         {
             //if (prc_info->kb.bit.G) //catch dump throw condition
@@ -64,8 +56,8 @@ void plier_task(void const *argument)
             {//
                 if (pplier->step == STEP_1)
                 {
+                    ecd_ramp_angle = plier_ramp(pplier->ecd_center + 90.0f, pplier->ecd_angle);
                     plier_set_angle(pplier, pplier->ecd_center + 90.0f);
-
                     if (fabs(pplier->ecd_angle - pplier->target_angle) <= 5.0f)
                     {
                         HAL_Delay(1000); //test 1
@@ -75,6 +67,7 @@ void plier_task(void const *argument)
 
                 else if (pplier->step == STEP_2)
                 {
+                    ecd_ramp_angle = plier_ramp(pplier->ecd_center + 90.0f, pplier->ecd_angle);
                     plier_set_angle(pplier, pplier->ecd_center + 90.0f);
                     //laser aim
                     if (1) //aimed // test 1
@@ -86,6 +79,7 @@ void plier_task(void const *argument)
 
                 else if (pplier->step == STEP_3)
                 {
+                    ecd_ramp_angle = plier_ramp(pplier->ecd_center + 180.0f, pplier->ecd_angle);
                     plier_set_angle(pplier, pplier->ecd_center + 180.0f);
                     if (fabs(pplier->ecd_angle - pplier->target_angle) <= 5.0f)
                     {
@@ -95,8 +89,11 @@ void plier_task(void const *argument)
                     }
                 }
 
+                // 可用 counter 延时
+
                 else if (pplier->step == STEP_4)
                 {
+                    ecd_ramp_angle = plier_ramp(pplier->ecd_center + 90.0f, pplier->ecd_angle);
                     plier_set_angle(pplier, pplier->ecd_center);
 
                     if (fabs(pplier->ecd_angle - pplier->target_angle) <= 5.0f)
@@ -109,7 +106,7 @@ void plier_task(void const *argument)
                 else if (pplier->step == STEP_5)
                 {
                     plier_set_angle(pplier, pplier->ecd_center + 135.0f);
-
+                    ecd_ramp_angle = plier_ramp(pplier->ecd_center + 135.0f, pplier->ecd_angle);
                     if (fabs(pplier->ecd_angle - (pplier->ecd_center + 90.0f)) < 5.0f)
                         set_linear_actuator(OFF);
 
@@ -123,7 +120,7 @@ void plier_task(void const *argument)
                 else if (pplier->step == STEP_6)
                 {
                     plier_set_angle(pplier, pplier->ecd_center);
-
+                    ecd_ramp_angle = plier_ramp(pplier->ecd_center, pplier->ecd_angle);
                     if (fabs(pplier->ecd_angle - pplier->target_angle) < 5.0f)
                     {
                         HAL_Delay(1000); //test 1
@@ -163,10 +160,4 @@ void plier_task(void const *argument)
         plier_execute(pplier);
         osDelayUntil(&period, 5);
     }
-}
-
-void plier_init_state_reset(void)
-{
-    ramp_init(&plier_ramp, BACK_CENTER_TIME / PLIER_PERIOD);
-    plier_auto_init_f = 0;
 }

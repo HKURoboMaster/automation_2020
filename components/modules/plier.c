@@ -157,6 +157,15 @@ static int16_t plier_get_ecd_angle(int16_t raw_ecd, int16_t center_offset)
   return tmp;
 }
 
+float plier_ramp(target_angle, ecd_angle)
+{
+  if (target_angle >= ecd_angle + 2 * PLIER_RAMP_CO)
+    return ecd_angle + PLIER_RAMP_CO;
+  else if (target_angle <= ecd_angle - 2 * PLIER_RAMP_CO)
+    return ecd_angle - PLIER_RAMP_CO;
+  return target_angle;
+}
+
 int32_t plier_execute(struct plier *plier)
 {
   float motor_out;

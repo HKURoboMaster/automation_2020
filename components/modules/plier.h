@@ -22,6 +22,8 @@
 #define PLIER_MOTOR_INDEX_L 0
 #define PLIER_MOTOR_INDEX_R 1
 
+#define PLIER_RAMP_CO 5.0
+
 enum step
 {
     STEP_1 = 1,
@@ -58,6 +60,7 @@ static int32_t plier_ecd_input_convert(struct controller *ctrl, void *input);
 int32_t plier_set_angle(struct plier *plier, float left_plier);
 static int16_t plier_get_ecd_angle(int16_t raw_ecd, int16_t center_offset);
 int32_t calc_ecd_angle_speed(struct plier *plier, uint32_t time);
+float plier_ramp(target_angle, ecd_angle);
 int32_t plier_execute(struct plier *plier);
 
 #endif // __PLIER_H__
