@@ -31,6 +31,7 @@
 #define SHOOT_ONCE_CMD (1u)
 #define SHOOT_CONTINUOUS_CMD (2u)
 
+// Edited by Z.P.Yan  the following speed will be changed(deleted) as the unit is changed to mps
 #define FRIC_STOP_SPEED 100u
 #define FRIC_MAX_SPEED 150u //MAX=200u, for safety set it to be 160 //160 results in overheater
 #define FRIC_CON_SPEED 138u //140u

@@ -72,7 +72,7 @@ int32_t gimbal_adjust_cmd(uint8_t *buff, uint16_t len)
  * for chassis power debugging via gimbal
  */
 uint8_t current_excess, low_voltage;
-int32_t current_detecting_js, voltage_detecting_js, buffer_remained_js, shooter_heat0_js, shooter_heat1_js, robot_level_js;
+int32_t current_detecting_js, voltage_detecting_js, buffer_remained_js, shooter_heat0_js, shooter_heat1_js, robot_level_js,shoot_speed_limit_js;
 
 /** Edited by Y.H. Liu
  *  @Jun 12, 2019: disbable the auto mode and implement the auto_aiming
@@ -392,17 +392,27 @@ int32_t robot_state_sent_by_can(ext_game_robot_state_t * robot_state_d)
   return RM_OK;
 }
 static uint8_t robot_level=0;
+//*Added by Z.P. Yan ; type to be determined/ 
+// static uint8_t shoot_speed_limit = 12;  //12 mps
 int32_t robot_state_data_callback(uint8_t *buff, uint16_t len)
 {
   if(len==sizeof(ext_game_robot_state_t))
   {
     ext_game_robot_state_t * temp = (ext_game_robot_state_t *) buff;
     robot_level = temp->robot_level;
+    //shoot_speed_limit = temp->robot_shoot_speed_limit    /**to be determined*/
   }
   return RM_OK;
 }
+
 uint8_t get_robot_level(void)
 {
   robot_level_js = robot_level;
   return robot_level;
 }
+
+// uint8_t get_shoot_speed_limit(void)
+// {
+//   shoot_speed_limit_js = shoot_speed_limit;
+//   return shoot_speed_limit;
+// }
