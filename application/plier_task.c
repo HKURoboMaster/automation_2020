@@ -15,6 +15,7 @@ uint32_t plier_tim_ms = 0;
 uint32_t plier_last_tim = 0;
 uint8_t plier_auto_init_f = 0;
 int8_t rc_js; //test 1
+enum step step_js;
 
 //int16_t i = 0; //test 1
 
@@ -164,5 +165,8 @@ void plier_task(void const *argument)
 
         plier_execute(pplier);
         osDelayUntil(&period, 5);
+
+        step_js = pplier->step;
     }
 }
+ 

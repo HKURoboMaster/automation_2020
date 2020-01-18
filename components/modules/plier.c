@@ -58,8 +58,8 @@ int32_t plier_cascade_register(struct plier *plier, const char *name, enum devic
 
   //Only control the left motor using cascade pid.
   plier->ctrl.convert_feedback = plier_ecd_input_convert;
-  pid_struct_init(&(plier->cascade.outer), 50, 40, 1, 0, 0);     // test 1
-  pid_struct_init(&(plier->cascade.inter), 800, 150, 20, 0, 0); // test 1
+  pid_struct_init(&(plier->cascade.outer), 500, 40, 1, 0, 0);     // test 1
+  pid_struct_init(&(plier->cascade.inter), 2000, 150, 20, 0, 0); // test 1
   plier->step = STEP_1;
   err = cascade_controller_register(&(plier->ctrl), motor_name[PLIER_MOTOR_INDEX_L],
                                     &(plier->cascade),
@@ -183,6 +183,8 @@ int32_t plier_execute(struct plier *plier)
   controller_set_input(ctrl, angle);
 
   pdata = motor_device_get_data(&(plier->motor[PLIER_MOTOR_INDEX_L]));
+	
+	plier->motor->data.ecd = fmod(plier->motor->data.total_ecd / 36.0f, 8192);
   plier->ecd_angle = PLIER_MOTOR_POSITIVE_DIR * plier_get_ecd_angle(pdata->ecd, plier->ecd_center) / ENCODER_ANGLE_RATIO;
   plier->ecd_speed = PLIER_MOTOR_POSITIVE_DIR * pdata->speed_rpm;
   controller_ex_js = controller_execute(&(plier->ctrl), (void *)plier);
