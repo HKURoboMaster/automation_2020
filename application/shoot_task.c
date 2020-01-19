@@ -61,6 +61,10 @@ void shoot_task(void const *argument)
   // static uint8_t lid_open = 0; //0x00 for closed, 0xFF for opened
   shoot_firction_toggle(pshoot, 1);
   shoot_lid_toggle(pshoot,1);
+  
+  //Added by Yan  initialize pid controller of the friction wheel 
+  fric_speed_ctrl_init(pshoot);
+  
   while (1)
   {
     if (rc_device_get_state(prc_dev, RC_S2_DOWN) == RM_OK)
@@ -184,6 +188,9 @@ void shoot_task(void const *argument)
       shoot_set_cmd(pshoot, SHOOT_STOP_CMD, 0);
       //shoot_set_cmd(pshoot2, SHOOT_STOP_CMD, 0);
     }
+    
+    //Added by Yan get feedback
+    //fric_get_feedback();
     
     shoot_execute(pshoot);
     //#ifdef HERO_ROBOT

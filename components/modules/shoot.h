@@ -76,6 +76,13 @@ struct shoot_target
 
 typedef struct shoot *shoot_t;
 
+//Added by Yan 
+struct fric_device
+{
+  float fric_spd[2];
+  float duty_ratio;// the duty_ratio of the pwm will be stored here (to be used directly for pwm controlling)
+};
+
 struct shoot
 {
   struct object parent;
@@ -86,17 +93,22 @@ struct shoot
   uint8_t cmd;
 
   uint8_t trigger_key;
-  float fric_spd[2];
+  //float fric_spd[2]; // Edited by Yan  add it into struct fric
 
   uint32_t shoot_num;
   uint32_t block_time;
 
   struct shoot_target target;
+ 
+  //Added by Yan   frame of pid controlling friction wheel
+  struct fric_device fric;
+  struct pid fric_pid;
+  float  fric_feedback;//get from encoder
 
   struct motor_device motor;
   struct pid motor_pid;
   struct pid_feedback motor_feedback;
-  struct controller ctrl;
+  struct controller ctrl;  
 };
 
 shoot_t shoot_find(const char *name);
