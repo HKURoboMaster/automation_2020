@@ -13,10 +13,10 @@ float controller_input_js;
 float controller_output_js;
 float cascade_inter_out_js;
 float cascade_outer_out_js;
+float ramp_angle_js;
 int8_t err_js;
 int8_t controller_ex_js;
 int16_t center_offset_js;
-
 
 int32_t plier_cascade_register(struct plier *plier, const char *name, enum device_can can)
 {
@@ -58,8 +58,8 @@ int32_t plier_cascade_register(struct plier *plier, const char *name, enum devic
 
   //Only control the left motor using cascade pid.
   plier->ctrl.convert_feedback = plier_ecd_input_convert;
-  pid_struct_init(&(plier->cascade.outer), 500, 40, 1, 0, 0);     // test 1
-  pid_struct_init(&(plier->cascade.inter), 2000, 150, 20, 0, 0); // test 1
+  pid_struct_init(&(plier->cascade.outer), 100, 40, 1, 0, 0);   // test 1
+  pid_struct_init(&(plier->cascade.inter), 3000, 150, 1, 0, 0); // test 1
   plier->step = STEP_1;
   err = cascade_controller_register(&(plier->ctrl), motor_name[PLIER_MOTOR_INDEX_L],
                                     &(plier->cascade),
@@ -121,21 +121,37 @@ static int32_t plier_ecd_input_convert(struct controller *ctrl, void *input)
   return RM_OK;
 }
 
-int32_t plier_set_angle(struct plier *plier, float plier_angle)
+int32_t plier_set_angle(struct plier *plier, float target)
 {
   if (plier == NULL)
     return -RM_INVAL;
-  
-  float target_angle;
-  target_angle=plier_angle;// * (1 - ramp_calculate(&plier_ramp));
 
-  VAL_LIMIT(target_angle, PLIER_ANGLE_MIN, PLIER_ANGLE_MAX);
-  plier->target_angle = target_angle;
-  target_angle_js = plier->target_angle; //Test 1
+  float ramp;
+  //if (target >= plier->ecd_angle + 2 * PLIER_RAMP_CO)
+  //  ramp = plier->ecd_angle + PLIER_RAMP_CO;
+  //else if (target <= plier->ecd_angle - 2 * PLIER_RAMP_CO)
+ //   ramp = plier->ecd_angle - PLIER_RAMP_CO;
+ // else
+  {
+    ramp = target;
+  }
+
+  VAL_LIMIT(ramp, PLIER_ANGLE_MIN, PLIER_ANGLE_MAX);
+  plier->ramp_angle = ramp;
+  //target_angle_js = plier->target_angle; //Test 1
 
   return RM_OK;
 }
 // Error
+/*float plier_ramp(float target, float ecd)
+{
+  if (target >= ecd + 2 * PLIER_RAMP_CO)
+    return ecd + PLIER_RAMP_CO;
+  else if (target <= ecd - 2 * PLIER_RAMP_CO)
+    return ecd - PLIER_RAMP_CO;
+  return target;
+}*/
+
 static int16_t plier_get_ecd_angle(int16_t raw_ecd, int16_t center_offset)
 {
   int16_t tmp = 0;
@@ -156,17 +172,6 @@ static int16_t plier_get_ecd_angle(int16_t raw_ecd, int16_t center_offset)
   return tmp;
 }
 
-float plier_ramp(float angle, float ecd)
-{
-  if (angle >= ecd + 2 * PLIER_RAMP_CO)
-    return ecd + PLIER_RAMP_CO;
-  else if (angle <= ecd - 2 * PLIER_RAMP_CO)
-    return ecd - PLIER_RAMP_CO;
-  return angle;
-}
-
-
-
 int32_t plier_execute(struct plier *plier)
 {
   float motor_out;
@@ -183,8 +188,8 @@ int32_t plier_execute(struct plier *plier)
   controller_set_input(ctrl, angle);
 
   pdata = motor_device_get_data(&(plier->motor[PLIER_MOTOR_INDEX_L]));
-	
-	plier->motor->data.ecd = fmod(plier->motor->data.total_ecd / 36.0f, 8192);
+
+  plier->motor->data.ecd = fmod(plier->motor->data.total_ecd / 36.0f, 8192);
   plier->ecd_angle = PLIER_MOTOR_POSITIVE_DIR * plier_get_ecd_angle(pdata->ecd, plier->ecd_center) / ENCODER_ANGLE_RATIO;
   plier->ecd_speed = PLIER_MOTOR_POSITIVE_DIR * pdata->speed_rpm;
   controller_ex_js = controller_execute(&(plier->ctrl), (void *)plier);
@@ -197,18 +202,15 @@ int32_t plier_execute(struct plier *plier)
   ecd_speed_js = plier->ecd_speed; //test 1
   ecd_angle_js = plier->ecd_angle;
   target_angle_js = plier->target_angle;
-  ecd_center_js = plier->ecd_center;
+  ramp_angle_js = plier->ramp_angle;
   motor_out_js = motor_out;
+
+  ecd_center_js = plier->ecd_center;
   controller_input_js = plier->ctrl.input;
   controller_output_js = plier->ctrl.output;
   cascade_inter_out_js = plier->cascade.inter.out;
   cascade_outer_out_js = plier->cascade.outer.out;
   center_offset_js = plier->ecd_center;
 
-
-
   return RM_OK;
 }
-
-
-
