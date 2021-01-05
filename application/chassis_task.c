@@ -45,7 +45,8 @@ int32_t power_js;
 uint8_t current_excess_flag_js;
 uint8_t sensor_offline = 0;
 #define CURRENT_OFFLINE 0x0Fu
-#define VOLTAGE_OFFLINE 0xF0u 
+#define VOLTAGE_OFFLINE 0xF0u
+float chassis_power_limit = 10.0; // to be determined
 
 /** Edited by Y.H. Liu
   * @Jun 12, 2019: modified the mode switch
@@ -171,7 +172,6 @@ void chassis_task(void const *argument)
     #ifdef CHASSIS_POWER_CTRL
       uint8_t current_excess_flag = 0;
       uint8_t low_volatge_flag = 0;
-      uint32_t chassis_power_limit = 70; // to be determined
       do
       {
         chassis_imu_update(pchassis);
@@ -189,9 +189,9 @@ void chassis_task(void const *argument)
         osDelayUntil(&period, 2);
         /*-------- Then, adjust the power --------*/
       
-      // Add by Z.P. Yan ;  get chassis power limitation(to be finished)
-      // ext_game_robot_state_t * ref_robot_state = get_robot_state();
-      // chassis_power_limit = ref_robot_state->robot_power_limitation; //** to be determined*/
+      // get chassis power limitation(to be finished)
+      // ext_game_robot_state_t * referee_state = get_robot_state();
+      // chassis_power_limit = referee_state->robot_level;
 
 
       //get the buffer

@@ -46,14 +46,14 @@ void shoot_task(void const *argument)
   rc_device_t prc_dev = NULL;
 
   shoot_t pshoot = NULL;
-	//shoot_t pshoot2 = NULL;
+	shoot_t pshoot2 = NULL;
   pshoot = shoot_find("shoot");
-	//pshoot2 = shoot_find("shoot2");//Leo
+	pshoot2 = shoot_find("shoot2");//Leo
   prc_dev = rc_device_find("can_rc");
 
-  // if (prc_dev == NULL)
-  // {
-  // }
+  if (prc_dev == NULL)
+  {
+  }
 
   //uint32_t shoot_time;
 
@@ -66,10 +66,10 @@ void shoot_task(void const *argument)
     if (rc_device_get_state(prc_dev, RC_S2_DOWN) == RM_OK)
     {
       shoot_disable(pshoot);
-      //shoot_disable(pshoot2);
+      shoot_disable(pshoot2);
 			shoot_set_fric_speed(pshoot,FRIC_MIN_SPEED,FRIC_MIN_SPEED);
       shoot_firction_toggle(pshoot,1); //assume that currently the fric is on
-      //shoot_firction_toggle(pshoot2,1); //Leo assume that currently the fric is on
+      shoot_firction_toggle(pshoot2,1); //Leo assume that currently the fric is on
       fric_on &= ~fric_on;
       shoot_execute(pshoot);
       #ifdef HERO_ROBOT
@@ -79,14 +79,14 @@ void shoot_task(void const *argument)
     }
     shoot_enable(pshoot);
     #ifdef HERO_ROBOT
-    //shoot_enable(pshoot2);
+    shoot_enable(pshoot2);
     #else
-   // controller_disable(&(pshoot2->ctrl));
+    controller_disable(&(pshoot2->ctrl));
     #endif
     if (rc_device_get_state(prc_dev, RC_S1_MID2UP) == RM_OK)
     {
       shoot_firction_toggle(pshoot, fric_on);
-      //shoot_firction_toggle(pshoot2, fric_on);
+      shoot_firction_toggle(pshoot2, fric_on);
       fric_on = ~fric_on;
     }
     // if (rc_device_get_state(prc_dev, RC_S1_MID2DOWN) == RM_OK)
@@ -95,16 +95,16 @@ void shoot_task(void const *argument)
     //   shoot_time = get_time_ms();
     // }
     if(rc_device_get_state(prc_dev, RC_S1_MID2DOWN) == RM_OK ||
-     (prc_dev->rc_info.kb.bit.R && !prc_dev->last_rc_info.kb.bit.R))//打开盖子
+     (prc_dev->rc_info.kb.bit.R && !prc_dev->last_rc_info.kb.bit.R))
     {
       shoot_lid_toggle(pshoot, 0);
-      //shoot_lid_toggle(pshoot2, 0);
+      shoot_lid_toggle(pshoot2, 0);
     }
     if(rc_device_get_state(prc_dev, RC_S1_DOWN2MID) == RM_OK ||(
-     !prc_dev->rc_info.kb.bit.R && prc_dev->last_rc_info.kb.bit.R))//关上盖子
+     !prc_dev->rc_info.kb.bit.R && prc_dev->last_rc_info.kb.bit.R))
     {
       shoot_lid_toggle(pshoot, 1);
-      //shoot_lid_toggle(pshoot2, 1);
+      shoot_lid_toggle(pshoot2, 1);
     }
 
     /*------ implement the keyboard controlling over shooting ------*/
@@ -113,7 +113,7 @@ void shoot_task(void const *argument)
       if(prc_dev->rc_info.kb.bit.F && !prc_dev->last_rc_info.kb.bit.F) //turn off the fric regardless the situation
       {
         shoot_firction_toggle(pshoot,1); //assume that currently the fric is on
-        //shoot_firction_toggle(pshoot2,1); //Leo assume that currently the fric is on
+        shoot_firction_toggle(pshoot2,1); //Leo assume that currently the fric is on
 				fric_on &= ~fric_on; //set fric_on to be 0x00 i.e. off
       }
     }
@@ -122,25 +122,22 @@ void shoot_task(void const *argument)
       if(prc_dev->rc_info.kb.bit.F && !prc_dev->last_rc_info.kb.bit.F) //turn on the fric regardless the situation
       {
         shoot_firction_toggle(pshoot,0); //assume that currently the fric is off
-        //shoot_firction_toggle(pshoot2,0); //Leo assume that currently the fric is off
+        shoot_firction_toggle(pshoot2,0); //Leo assume that currently the fric is off
 				fric_on |= ~fric_on; //set fric_on to be 0xFF i.e. on
       }
     }
     
     /*------ implement the function of a trigger ------*/
     uint16_t * shooter_heat_ptr = shooter_heat_get_via_can();
-    uint16_t heatLimit = get_heat_limit();  
+    uint16_t heatLimit = get_heat_limit();
+
+    // uint16_t shoot_speed = get_shoot_speed(); to be finished    
 
     #ifndef HERO_ROBOT
-    /* Added by Z.P. Yan   get the shooting speed limitation and the current shooting speed   */
-    // uint8_t shoot_speed_limit = 12//mps
-    // shoot_speed_limit = get_shoot_speed_limit(); type to be determined   
-
-
     if (shooter_heat_ptr[0]< heatLimit-55 && rc_device_get_state(prc_dev, RC_S2_DOWN) != RM_OK && fric_on) //not in disabled mode
     {
       if (rc_device_get_state(prc_dev, RC_WHEEL_UP) == RM_OK
-        || mouse_shoot_control(prc_dev)==press)//连发并降速
+        || mouse_shoot_control(prc_dev)==press)
       {
         shoot_set_fric_speed(pshoot, FRIC_CON_SPEED, FRIC_CON_SPEED);
         shoot_set_cmd(pshoot, SHOOT_CONTINUOUS_CMD, CONTIN_BULLET_NUM);				
@@ -158,37 +155,37 @@ void shoot_task(void const *argument)
       }
     }
     #else
-    // if (shooter_heat_ptr[1] < heatLimit-40 && rc_device_get_state(prc_dev, RC_S2_DOWN) != RM_OK && fric_on) //not in disabled mode
-    // {
-    //   if (rc_device_get_state(prc_dev, RC_WHEEL_UP) == RM_OK && prc_dev->last_rc_info.wheel < 300)
-    //   {
-    //     shoot_set_cmd(pshoot, SHOOT_ONCE_CMD, 1);
-		// 		shoot_set_cmd(pshoot2, SHOOT_ONCE_CMD, 1);//Leo
-    //   }
-    //   else if ((rc_device_get_state(prc_dev, RC_WHEEL_DOWN) == RM_OK && prc_dev->last_rc_info.wheel > -300)
-    //         || mouse_shoot_control(prc_dev)==click )
-    //   {
-    //     shoot_set_cmd(pshoot, SHOOT_ONCE_CMD, 1);
-		// 		shoot_set_cmd(pshoot2, SHOOT_ONCE_CMD, 1);//Leo
+    if (shooter_heat_ptr[1] < heatLimit-40 && rc_device_get_state(prc_dev, RC_S2_DOWN) != RM_OK && fric_on) //not in disabled mode
+    {
+      if (rc_device_get_state(prc_dev, RC_WHEEL_UP) == RM_OK && prc_dev->last_rc_info.wheel < 300)
+      {
+        shoot_set_cmd(pshoot, SHOOT_ONCE_CMD, 1);
+				shoot_set_cmd(pshoot2, SHOOT_ONCE_CMD, 1);//Leo
+      }
+      else if ((rc_device_get_state(prc_dev, RC_WHEEL_DOWN) == RM_OK && prc_dev->last_rc_info.wheel > -300)
+            || mouse_shoot_control(prc_dev)==click )
+      {
+        shoot_set_cmd(pshoot, SHOOT_ONCE_CMD, 1);
+				shoot_set_cmd(pshoot2, SHOOT_ONCE_CMD, 1);//Leo
 
-    //   }
-    //   else
-    //   {
-    //     shoot_set_cmd(pshoot, SHOOT_STOP_CMD, 0);
-		// 		shoot_set_cmd(pshoot2, SHOOT_STOP_CMD, 0);//Leo
-    //   }
-    // }
+      }
+      else
+      {
+        shoot_set_cmd(pshoot, SHOOT_STOP_CMD, 0);
+				shoot_set_cmd(pshoot2, SHOOT_STOP_CMD, 0);//Leo
+      }
+    }
     #endif
     else
     {
       shoot_set_cmd(pshoot, SHOOT_STOP_CMD, 0);
-      //shoot_set_cmd(pshoot2, SHOOT_STOP_CMD, 0);
+      shoot_set_cmd(pshoot2, SHOOT_STOP_CMD, 0);
     }
     
     shoot_execute(pshoot);
-    //#ifdef HERO_ROBOT
-		//shoot_execute(pshoot2);//Leo
-    //#endif
+    #ifdef HERO_ROBOT
+		shoot_execute(pshoot2);//Leo
+    #endif
     osDelayUntil(&period, 5);
   }
 }
@@ -207,15 +204,15 @@ int32_t shoot_firction_toggle(shoot_t pshoot, uint8_t toggled)
   {
     shoot_set_fric_speed(pshoot, FRIC_STOP_SPEED, FRIC_STOP_SPEED);
     turn_off_laser();
-	  // if(6==strlen(pshoot->parent.name))//Leo: If the given struct is shoot2
-		//   shoot_set_cmd(pshoot, SHOOT_STOP_CMD, 0);		 //Leo: Stop the trigger motor
+	  if(6==strlen(pshoot->parent.name))//Leo: If the given struct is shoot2
+		  shoot_set_cmd(pshoot, SHOOT_STOP_CMD, 0);		 //Leo: Stop the trigger motor
   }
   else
   {
     shoot_set_fric_speed(pshoot, FRIC_MAX_SPEED, FRIC_MAX_SPEED);
     turn_on_laser();
-    // if(6==strlen(pshoot->parent.name) && pshoot->ctrl.enable)//Leo: If the given struct is shoot2
-		//   shoot_set_cmd(pshoot, SHOOT_CONTINUOUS_CMD, CONTIN_BULLET_NUM);	    //Leo: Continue to shoot the bullets
+    if(6==strlen(pshoot->parent.name) && pshoot->ctrl.enable)//Leo: If the given struct is shoot2
+		  shoot_set_cmd(pshoot, SHOOT_CONTINUOUS_CMD, CONTIN_BULLET_NUM);	    //Leo: Continue to shoot the bullets
   }
   return 0;
 }
@@ -293,3 +290,6 @@ static uint16_t get_heat_limit(void)
   }
   return limit; 
 }
+
+// static uint16_t get_shoot_speed(void)   to be finished
+//{}
