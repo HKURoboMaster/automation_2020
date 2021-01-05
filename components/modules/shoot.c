@@ -120,8 +120,8 @@ int32_t shoot_pid_register(struct shoot *shoot, const char *name, enum device_ca
   shoot->param.turn_speed = TURN_SPEED_DEFAULT;
   shoot->param.check_timeout = BLOCK_CHECK_TIMEOUT_DEFAULT;
 
-  shoot->fric.fric_spd[0] = FRIC_MIN_SPEED;
-  shoot->fric.fric_spd[1] = FRIC_MIN_SPEED;
+  shoot->fric_spd[0] = FRIC_MIN_SPEED;
+  shoot->fric_spd[1] = FRIC_MIN_SPEED;
 
   memcpy(&motor_name[name_len], "_TURN\0", 6);
 
@@ -203,12 +203,11 @@ int32_t shoot_execute(struct shoot *shoot)
   if (shoot == NULL)
     return -RM_INVAL;
 
-  shoot_fric_ctrl(shoot); // 当前控制PWM以控制摩擦轮 will be deleted
+  shoot_fric_ctrl(shoot); // 当前控制PWM以控制摩擦轮
   //shoot_block_check(shoot); Inside the shoot_cmd_ctrl and inside state_update
   shoot_cmd_ctrl(shoot);
   
-  //Added by Yan pid controller of friction wheel
-  fric_speed_keep(shoot);  
+  
   
   pdata = motor_device_get_data(&(shoot->motor));
 	controller_set_input(&(shoot->ctrl), shoot->target.motor_speed);
@@ -217,7 +216,6 @@ int32_t shoot_execute(struct shoot *shoot)
 
   motor_device_set_current(&shoot->motor, (int16_t)motor_out);
 
-  
   return RM_OK;
 }
 
@@ -370,7 +368,7 @@ static int32_t shoot_cmd_ctrl(struct shoot *shoot)
       return RM_INVAL;
   }
  
-	if(shoot->fric.fric_spd[0] < (FRIC_MAX_SPEED+FRIC_MIN_SPEED)/2 || shoot->fric.fric_spd[1] < (FRIC_MAX_SPEED+FRIC_MIN_SPEED)/2)
+	if(shoot->fric_spd[0] < (FRIC_MAX_SPEED+FRIC_MIN_SPEED)/2 || shoot->fric_spd[1] < (FRIC_MAX_SPEED+FRIC_MIN_SPEED)/2)
 	{
 		controller_disable(&(shoot->ctrl));
 	}
@@ -389,42 +387,42 @@ static int32_t shoot_fric_ctrl(struct shoot *shoot)
   if (shoot == NULL)
     return -RM_INVAL;
 
-  shoot_get_fric_speed(shoot, &shoot->fric.fric_spd[0], &shoot->fric.fric_spd[1]);
+  shoot_get_fric_speed(shoot, &shoot->fric_spd[0], &shoot->fric_spd[1]);
 
-  if (shoot->target.fric_spd[0] != shoot->fric.fric_spd[0])
+  if (shoot->target.fric_spd[0] != shoot->fric_spd[0])
   {
-    if (shoot->target.fric_spd[0] < shoot->fric.fric_spd[0])
+    if (shoot->target.fric_spd[0] < shoot->fric_spd[0])
     {
-      if(shoot->fric.fric_spd[0]>shoot->target.fric_spd[0]-15)
-        shoot->fric.fric_spd[0] -= 0.03125f;
+      if(shoot->fric_spd[0]>shoot->target.fric_spd[0]-15)
+        shoot->fric_spd[0] -= 0.03125f;
       else
-        shoot->fric.fric_spd[0] -= 1;
+        shoot->fric_spd[0] -= 1;
     }
     else
     {
-      shoot->fric.fric_spd[0] += 0.25f;
+      shoot->fric_spd[0] += 0.25f;
     }
   }
-  if (shoot->target.fric_spd[1] != shoot->fric.fric_spd[1])
+  if (shoot->target.fric_spd[1] != shoot->fric_spd[1])
   {
-    if (shoot->target.fric_spd[1] < shoot->fric.fric_spd[1])
+    if (shoot->target.fric_spd[1] < shoot->fric_spd[1])
     {
-      if(shoot->fric.fric_spd[1]>shoot->target.fric_spd[1]-15)
-        shoot->fric.fric_spd[1] -= 0.03125f;
+      if(shoot->fric_spd[1]>shoot->target.fric_spd[1]-15)
+        shoot->fric_spd[1] -= 0.03125f;
       else
-        shoot->fric.fric_spd[1] -= 1;
+        shoot->fric_spd[1] -= 1;
     }
     else
     {
-      shoot->fric.fric_spd[1] += 0.25f;
+      shoot->fric_spd[1] += 0.25f;
     }
   }
 
-  VAL_LIMIT(shoot->fric.fric_spd[0], FRIC_STOP_SPEED, FRIC_MAX_SPEED);
-  VAL_LIMIT(shoot->fric.fric_spd[1], FRIC_STOP_SPEED, FRIC_MAX_SPEED);
+  VAL_LIMIT(shoot->fric_spd[0], FRIC_STOP_SPEED, FRIC_MAX_SPEED);
+  VAL_LIMIT(shoot->fric_spd[1], FRIC_STOP_SPEED, FRIC_MAX_SPEED);
 
   if(5==strlen(shoot->parent.name))
-	  fric_set_output((uint16_t)shoot->fric.fric_spd[0], (uint16_t)shoot->fric.fric_spd[1]);
+	  fric_set_output((uint16_t)shoot->fric_spd[0], (uint16_t)shoot->fric_spd[1]);
 	return RM_OK;
 }
 
@@ -493,29 +491,3 @@ int32_t magazine_lid_cmd(uint8_t cmd)
     MAGA_SERVO = 170;
   return 0;
 }
-
-
-/*Added by Z.P.Yan 
- *@Jan 2020   create the frame of pid controller of the friction wheel*/
-static void fric_speed_ctrl_init(struct shoot *shoot)
-{
-  pid_struct_init(&(shoot->fric_pid), 2000, 500, 1100, 10, 0); //parameter to be determined
-}
-
-static int32_t fric_speed_keep(struct shoot *shoot)
-{ 
-  float current_fric_speed = (shoot->fric_feedback);
-  pid_calculate(&(shoot->fric_pid),current_fric_speed,shoot->target.fric_spd[0]);
-  fric_speed_get_output(shoot);
-  return 0;
-}
-
-void fric_speed_get_output(struct shoot *shoot)
-{
-  shoot->fric.duty_ratio = shoot->fric_pid.out;
-}
-
-// void fric_get_feedback(struct shoot *shoot)
-// {
-//   shoot->fric_feedback = /*get from encoder*/
-// }
