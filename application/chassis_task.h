@@ -29,7 +29,7 @@
 
 void chassis_task(void const * argument);
 int32_t chassis_set_relative_angle(float angle);
-
+int32_t setSupercapPower();
 struct chassis_power
 {
 	int current_debug;

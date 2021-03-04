@@ -24,6 +24,8 @@
 #include "smooth_filter.h"
 #include <math.h>
 #include "drv_io.h"
+#include "can.h"
+#include "protocol_interface.h"
 #define RAD_TO_DEG 57.296f // 180/PI
 #define MAPPING_INDEX_CRT 1.0f
 #define MAPPING_INDEX_VTG 1.0f
@@ -103,6 +105,7 @@ void chassis_task(void const *argument)
       chassis_enable(pchassis);
       int32_t key_x_speed = MAX_CHASSIS_VX_SPEED/2;
       int32_t key_y_speed = MAX_CHASSIS_VY_SPEED/2;
+      set_supercap_power();
       if(prc_info->kb.bit.V)
       {
         key_x_speed = MAX_CHASSIS_VX_SPEED;
@@ -347,4 +350,29 @@ int get_chassis_power(struct chassis_power *chassis_power) //due to changes of t
 	current_js_smooth = (int) (chassis_power->current*1000);
 	//power_js = (int)(chassis_power->power*1000);
 	return chassis_power->power;
+}
+
+/**
+ * Mar 3, 2021
+ * @brief set the power of the capacitor to 30W
+ */
+int32_t set_supercap_power()
+{
+  uint16_t temPower = 3000;
+  uint8_t sendbuf[8];
+  sendbuf[0] = temPower >> 8;
+  sendbuf[1] = temPower;
+	return can_msg_bytes_send(&hcan2, sendbuf, 8, 0x210);
+}
+
+/**
+ * Mar 3, 2021
+ * @brief get the power from supercapacitor
+ */
+int32_t get_supercap_power()
+{
+  void * can_rx_data = malloc(8);
+  protocol_can_rcv_data(PROTOCOL_CAN_PORT2, 0x211, can_rx_data, 8);
+  uint16_t * PowerData = (uint16_t *) can_rx_data;
+  return PowerData[3];
 }
